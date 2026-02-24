@@ -20,13 +20,9 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
       
-      - name: Build Backend
+      - name: Build and Test Backend
         working-directory: ./backend
-        run: mvn clean package -DskipTests
-      
-      - name: Run Backend Tests
-        working-directory: ./backend
-        run: mvn test
+        run: mvn -B verify
 
   frontend-build:
     runs-on: ubuntu-latest
@@ -52,23 +48,3 @@ jobs:
       - name: Build Frontend
         working-directory: ./frontend
         run: npm run build
-
-  docker-build:
-    needs: [backend-build, frontend-build]
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/master'
-    
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      
-      - name: Build Docker Image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: false
-          tags: history-ai:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
