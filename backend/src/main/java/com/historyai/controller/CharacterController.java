@@ -4,6 +4,7 @@ import com.historyai.dto.HistoricalCharacterDTO;
 import com.historyai.service.CharacterService;
 import jakarta.validation.Valid;
 import java.util.List;
+import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -32,7 +33,7 @@ public class CharacterController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<HistoricalCharacterDTO> getCharacterById(@PathVariable String id) {
+    public ResponseEntity<HistoricalCharacterDTO> getCharacterById(@PathVariable UUID id) {
         return characterService.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -61,7 +62,7 @@ public class CharacterController {
 
     @PutMapping("/{id}")
     public ResponseEntity<HistoricalCharacterDTO> updateCharacter(
-            @PathVariable String id,
+            @PathVariable UUID id,
             @Valid @RequestBody HistoricalCharacterDTO dto) {
         try {
             HistoricalCharacterDTO updated = characterService.update(id, dto);
@@ -72,7 +73,7 @@ public class CharacterController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteCharacter(@PathVariable String id) {
+    public ResponseEntity<Void> deleteCharacter(@PathVariable UUID id) {
         try {
             characterService.deleteById(id);
             return ResponseEntity.noContent().build();

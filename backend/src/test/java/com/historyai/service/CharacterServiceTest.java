@@ -33,7 +33,7 @@ class CharacterServiceTest {
 
     @BeforeEach
     void setUp() {
-        String id = UUID.randomUUID().toString();
+        UUID id = UUID.randomUUID();
         testCharacter = new HistoricalCharacter("Mikołaj Kopernik", "Polski astronom", "Renesans", "Polska");
         testCharacter.setId(id);
         testCharacter.setBirthYear(1473);
@@ -72,9 +72,10 @@ class CharacterServiceTest {
 
     @Test
     void findById_WhenNotExists_ShouldReturnEmpty() {
-        when(repository.findById("nonexistent")).thenReturn(Optional.empty());
+        UUID nonexistentId = UUID.randomUUID();
+        when(repository.findById(nonexistentId)).thenReturn(Optional.empty());
 
-        Optional<HistoricalCharacterDTO> result = characterService.findById("nonexistent");
+        Optional<HistoricalCharacterDTO> result = characterService.findById(nonexistentId);
 
         assertFalse(result.isPresent());
     }
@@ -124,10 +125,11 @@ class CharacterServiceTest {
 
     @Test
     void update_WhenNotExists_ShouldThrowException() {
-        when(repository.findById("nonexistent")).thenReturn(Optional.empty());
+        UUID nonexistentId = UUID.randomUUID();
+        when(repository.findById(nonexistentId)).thenReturn(Optional.empty());
 
         assertThrows(IllegalArgumentException.class, () -> 
-            characterService.update("nonexistent", testDTO));
+            characterService.update(nonexistentId, testDTO));
     }
 
     @Test
@@ -141,9 +143,10 @@ class CharacterServiceTest {
 
     @Test
     void deleteById_WhenNotExists_ShouldThrowException() {
-        when(repository.existsById("nonexistent")).thenReturn(false);
+        UUID nonexistentId = UUID.randomUUID();
+        when(repository.existsById(nonexistentId)).thenReturn(false);
 
         assertThrows(IllegalArgumentException.class, () -> 
-            characterService.deleteById("nonexistent"));
+            characterService.deleteById(nonexistentId));
     }
 }

@@ -6,6 +6,7 @@ import com.historyai.repository.HistoricalCharacterRepository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,7 +28,7 @@ public class CharacterService {
 				.toList();
 	}
 
-	public Optional<HistoricalCharacterDTO> findById(String id) {
+	public Optional<HistoricalCharacterDTO> findById(UUID id) {
 		return repository.findById(id)
 				.map(HistoricalCharacterDTO::fromEntity);
 	}
@@ -64,7 +65,7 @@ public class CharacterService {
 		return HistoricalCharacterDTO.fromEntity(saved);
 	}
 
-	public HistoricalCharacterDTO update(String id, HistoricalCharacterDTO dto) {
+	public HistoricalCharacterDTO update(UUID id, HistoricalCharacterDTO dto) {
 		HistoricalCharacter existing = repository.findById(id)
 				.orElseThrow(() -> new IllegalArgumentException("Character not found: " + id));
 
@@ -80,7 +81,7 @@ public class CharacterService {
 		return HistoricalCharacterDTO.fromEntity(updated);
 	}
 
-	public void deleteById(String id) {
+	public void deleteById(UUID id) {
 		if (!repository.existsById(id)) {
 			throw new IllegalArgumentException("Character not found: " + id);
 		}

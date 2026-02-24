@@ -2,10 +2,11 @@ package com.historyai.dto;
 
 import com.historyai.entity.HistoricalCharacter;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 public class HistoricalCharacterDTO {
 
-    private String id;
+    private UUID id;
     private String name;
     private Integer birthYear;
     private Integer deathYear;
@@ -46,11 +47,11 @@ public class HistoricalCharacterDTO {
         return entity;
     }
 
-    public String getId() {
+    public UUID getId() {
         return id;
     }
 
-    public void setId(String id) {
+    public void setId(UUID id) {
         this.id = id;
     }
 
