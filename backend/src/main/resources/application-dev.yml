@@ -1,0 +1,13 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+  
+  flyway:
+    enabled: false
+
+logging:
+  level:
+    com.historyai: DEBUG
+    org.springframework.ai: DEBUG
