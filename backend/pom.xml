@@ -7,7 +7,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.3.0</version>
+        <version>3.5.0</version>
         <relativePath/>
     </parent>
     
@@ -18,8 +18,7 @@
     <description>AI-powered chat with historical figures</description>
     
     <properties>
-        <java.version>23</java.version>
-        <spring-ai.version>1.0.0-M4</spring-ai.version>
+        <java.version>25</java.version>
     </properties>
     
     <dependencies>
@@ -36,7 +35,7 @@
         <dependency>
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-ollama-spring-boot-starter</artifactId>
-            <version>${spring-ai.version}</version>
+            <version>1.0.0</version>
         </dependency>
         
         <dependency>
