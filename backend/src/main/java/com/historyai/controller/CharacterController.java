@@ -66,7 +66,7 @@ public class CharacterController {
         try {
             HistoricalCharacterDTO updated = characterService.update(id, dto);
             return ResponseEntity.ok(updated);
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException _) {
             return ResponseEntity.notFound().build();
         }
     }
@@ -76,7 +76,7 @@ public class CharacterController {
         try {
             characterService.deleteById(id);
             return ResponseEntity.noContent().build();
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException _) {
             return ResponseEntity.notFound().build();
         }
     }
