@@ -31,21 +31,27 @@ import static org.junit.jupiter.api.Assertions.*;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class CharacterApiIntegrationTest {
 
-    static PostgreSQLContainer<?> postgresContainer = new PostgreSQLContainer<>("postgres:16-alpine")
-            .withDatabaseName("history_ai")
-            .withUsername("postgres")
-            .withPassword("postgres");
+    static PostgreSQLContainer<?> postgresContainer;
+    static String jdbcUrl;
+    static String username;
+    static String password;
 
-    @BeforeAll
-    static void startContainer() {
+    static {
+        postgresContainer = new PostgreSQLContainer<>("postgres:16-alpine")
+                .withDatabaseName("history_ai")
+                .withUsername("postgres")
+                .withPassword("postgres");
         postgresContainer.start();
+        jdbcUrl = postgresContainer.getJdbcUrl();
+        username = postgresContainer.getUsername();
+        password = postgresContainer.getPassword();
     }
 
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", postgresContainer::getJdbcUrl);
-        registry.add("spring.datasource.username", postgresContainer::getUsername);
-        registry.add("spring.datasource.password", postgresContainer::getPassword);
+        registry.add("spring.datasource.url", () -> jdbcUrl);
+        registry.add("spring.datasource.username", () -> username);
+        registry.add("spring.datasource.password", () -> password);
         registry.add("spring.datasource.driver-class-name", () -> "org.postgresql.Driver");
     }
 
