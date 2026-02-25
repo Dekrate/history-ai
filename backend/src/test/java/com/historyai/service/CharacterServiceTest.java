@@ -2,6 +2,8 @@ package com.historyai.service;
 
 import com.historyai.dto.HistoricalCharacterDTO;
 import com.historyai.entity.HistoricalCharacter;
+import com.historyai.exception.CharacterAlreadyExistsException;
+import com.historyai.exception.CharacterNotFoundException;
 import com.historyai.repository.HistoricalCharacterRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -128,7 +130,7 @@ class CharacterServiceTest {
         UUID nonexistentId = UUID.randomUUID();
         when(repository.findById(nonexistentId)).thenReturn(Optional.empty());
 
-        assertThrows(IllegalArgumentException.class, () -> 
+        assertThrows(CharacterNotFoundException.class, () -> 
             characterService.update(nonexistentId, testDTO));
     }
 
@@ -146,7 +148,7 @@ class CharacterServiceTest {
         UUID nonexistentId = UUID.randomUUID();
         when(repository.existsById(nonexistentId)).thenReturn(false);
 
-        assertThrows(IllegalArgumentException.class, () -> 
+        assertThrows(CharacterNotFoundException.class, () -> 
             characterService.deleteById(nonexistentId));
     }
 
@@ -183,7 +185,7 @@ class CharacterServiceTest {
     void save_WithExistingName_ShouldThrowException() {
         when(repository.existsByName("Mikołaj Kopernik")).thenReturn(true);
 
-        assertThrows(IllegalArgumentException.class, () -> 
+        assertThrows(CharacterAlreadyExistsException.class, () -> 
             characterService.save(testDTO));
     }
 
