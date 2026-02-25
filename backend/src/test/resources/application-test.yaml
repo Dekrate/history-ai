@@ -14,11 +14,6 @@ spring:
   flyway:
     enabled: false
 
-# Testcontainers Windows Docker Desktop configuration
-testcontainers:
-  docker:
-    host: npipe:////./pipe/docker_engine
-
 logging:
   level:
     com.historyai: DEBUG

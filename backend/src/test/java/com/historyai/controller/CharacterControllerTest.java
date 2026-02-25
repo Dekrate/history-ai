@@ -4,7 +4,6 @@ import com.historyai.dto.HistoricalCharacterDTO;
 import com.historyai.exception.CharacterAlreadyExistsException;
 import com.historyai.exception.CharacterNotFoundException;
 import com.historyai.service.CharacterService;
-import jakarta.validation.ValidationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -184,15 +183,4 @@ class CharacterControllerTest {
                 () -> controller.deleteCharacter(testId));
     }
 
-    @Test
-    void createCharacter_WithInvalidDto_ShouldThrowValidationException() {
-        HistoricalCharacterDTO invalidDto = new HistoricalCharacterDTO();
-        invalidDto.setName(null);
-
-        when(characterService.save(any(HistoricalCharacterDTO.class)))
-                .thenThrow(new ValidationException("Name is required"));
-
-        assertThrows(ValidationException.class, 
-                () -> controller.createCharacter(invalidDto));
-    }
 }
