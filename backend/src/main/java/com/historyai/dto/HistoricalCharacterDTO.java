@@ -1,12 +1,15 @@
 package com.historyai.dto;
 
 import com.historyai.entity.HistoricalCharacter;
+import jakarta.validation.constraints.NotBlank;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 public class HistoricalCharacterDTO {
 
     private UUID id;
+    
+    @NotBlank
     private String name;
     private Integer birthYear;
     private Integer deathYear;

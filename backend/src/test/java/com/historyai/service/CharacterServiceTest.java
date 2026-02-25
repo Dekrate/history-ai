@@ -149,4 +149,52 @@ class CharacterServiceTest {
         assertThrows(IllegalArgumentException.class, () -> 
             characterService.deleteById(nonexistentId));
     }
+
+    @Test
+    void findByEra_ShouldReturnMatchingCharacters() {
+        when(repository.findByEra("Renesans")).thenReturn(Arrays.asList(testCharacter));
+
+        List<HistoricalCharacterDTO> result = characterService.findByEra("Renesans");
+
+        assertEquals(1, result.size());
+        assertEquals("Renesans", result.get(0).getEra());
+    }
+
+    @Test
+    void findByNationality_ShouldReturnMatchingCharacters() {
+        when(repository.findByNationality("Polska")).thenReturn(Arrays.asList(testCharacter));
+
+        List<HistoricalCharacterDTO> result = characterService.findByNationality("Polska");
+
+        assertEquals(1, result.size());
+        assertEquals("Polska", result.get(0).getNationality());
+    }
+
+    @Test
+    void save_WithInvalidYears_ShouldThrowException() {
+        testDTO.setBirthYear(1600);
+        testDTO.setDeathYear(1500);
+
+        assertThrows(IllegalArgumentException.class, () -> 
+            characterService.save(testDTO));
+    }
+
+    @Test
+    void save_WithExistingName_ShouldThrowException() {
+        when(repository.existsByName("Mikołaj Kopernik")).thenReturn(true);
+
+        assertThrows(IllegalArgumentException.class, () -> 
+            characterService.save(testDTO));
+    }
+
+    @Test
+    void update_WithInvalidYears_ShouldThrowException() {
+        when(repository.findById(testCharacter.getId())).thenReturn(Optional.of(testCharacter));
+        
+        testDTO.setBirthYear(1600);
+        testDTO.setDeathYear(1500);
+
+        assertThrows(IllegalArgumentException.class, () -> 
+            characterService.update(testCharacter.getId(), testDTO));
+    }
 }

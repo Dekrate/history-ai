@@ -3,10 +3,12 @@ package com.historyai.controller;
 import com.historyai.dto.HistoricalCharacterDTO;
 import com.historyai.service.CharacterService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -19,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/characters")
+@Validated
 public class CharacterController {
 
     private final CharacterService characterService;
@@ -40,7 +43,8 @@ public class CharacterController {
     }
 
     @GetMapping("/search")
-    public ResponseEntity<List<HistoricalCharacterDTO>> searchCharacters(@RequestParam String q) {
+    public ResponseEntity<List<HistoricalCharacterDTO>> searchCharacters(
+            @RequestParam @NotBlank String q) {
         return ResponseEntity.ok(characterService.search(q));
     }
 
@@ -64,21 +68,13 @@ public class CharacterController {
     public ResponseEntity<HistoricalCharacterDTO> updateCharacter(
             @PathVariable UUID id,
             @Valid @RequestBody HistoricalCharacterDTO dto) {
-        try {
-            HistoricalCharacterDTO updated = characterService.update(id, dto);
-            return ResponseEntity.ok(updated);
-        } catch (IllegalArgumentException _) {
-            return ResponseEntity.notFound().build();
-        }
+        HistoricalCharacterDTO updated = characterService.update(id, dto);
+        return ResponseEntity.ok(updated);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteCharacter(@PathVariable UUID id) {
-        try {
-            characterService.deleteById(id);
-            return ResponseEntity.noContent().build();
-        } catch (IllegalArgumentException _) {
-            return ResponseEntity.notFound().build();
-        }
+        characterService.deleteById(id);
+        return ResponseEntity.noContent().build();
     }
 }

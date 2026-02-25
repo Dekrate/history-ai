@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@Transactional
+@Transactional(readOnly = true)
 public class CharacterService {
 
 	private final HistoricalCharacterRepository repository;
@@ -59,15 +59,31 @@ public class CharacterService {
 				.toList();
 	}
 
+	@Transactional
 	public HistoricalCharacterDTO save(HistoricalCharacterDTO dto) {
+		if (dto.getBirthYear() != null && dto.getDeathYear() != null 
+				&& dto.getBirthYear() > dto.getDeathYear()) {
+			throw new IllegalArgumentException("Birth year cannot be after death year");
+		}
+		
+		if (repository.existsByName(dto.getName())) {
+			throw new IllegalArgumentException("Character with this name already exists: " + dto.getName());
+		}
+		
 		HistoricalCharacter entity = dto.toEntity();
 		HistoricalCharacter saved = repository.save(entity);
 		return HistoricalCharacterDTO.fromEntity(saved);
 	}
 
+	@Transactional
 	public HistoricalCharacterDTO update(UUID id, HistoricalCharacterDTO dto) {
 		HistoricalCharacter existing = repository.findById(id)
 				.orElseThrow(() -> new IllegalArgumentException("Character not found: " + id));
+
+		if (dto.getBirthYear() != null && dto.getDeathYear() != null 
+				&& dto.getBirthYear() > dto.getDeathYear()) {
+			throw new IllegalArgumentException("Birth year cannot be after death year");
+		}
 
 		existing.setName(dto.getName());
 		existing.setBirthYear(dto.getBirthYear());
@@ -81,6 +97,7 @@ public class CharacterService {
 		return HistoricalCharacterDTO.fromEntity(updated);
 	}
 
+	@Transactional
 	public void deleteById(UUID id) {
 		if (!repository.existsById(id)) {
 			throw new IllegalArgumentException("Character not found: " + id);
