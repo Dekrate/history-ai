@@ -1,9 +1,7 @@
 package com.historyai.aspect;
 
 import java.util.Arrays;
-import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
-import org.aspectj.lang.annotation.AfterThrowing;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
@@ -117,28 +115,6 @@ public class LoggingAspect {
     }
 
     /**
-     * Logs exceptions thrown from controller and service methods.
-     *
-     * @param joinPoint the join point
-     * @param exception the thrown exception
-     */
-    @AfterThrowing(pointcut = "controllerMethods() || serviceMethods()", 
-                   throwing = "exception")
-    public void logException(JoinPoint joinPoint, Throwable exception) {
-        String methodName = joinPoint.getSignature().toShortString();
-        String traceId = MDC.get("traceId");
-        boolean isController = joinPoint.getTarget().getClass()
-                .getPackageName().contains("controller");
-
-        Logger logger = isController ? controllerLogger : serviceLogger;
-        
-        logger.error("[{}] Exception in {} - {}: {}", 
-                traceId, methodName, 
-                exception.getClass().getSimpleName(), 
-                exception.getMessage());
-    }
-
-    /**
      * Sanitizes arguments to avoid logging sensitive data.
      *
      * @param args the method arguments
@@ -163,7 +139,7 @@ public class LoggingAspect {
         
         String className = arg.getClass().getSimpleName();
         
-        if (arg instanceof char[] || arg instanceof String) {
+        if (arg instanceof char[]) {
             return "[REDACTED]";
         }
         

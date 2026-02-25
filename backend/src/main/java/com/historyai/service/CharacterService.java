@@ -159,6 +159,13 @@ public class CharacterService {
         HistoricalCharacter existing = repository.findById(id)
                 .orElseThrow(() -> new CharacterNotFoundException(id));
 
+        String newName = dto.getName();
+        if (newName != null && !newName.equals(existing.getName())
+                && repository.existsByName(newName)) {
+            logger.warn("Attempt to update character to an existing name: {}", newName);
+            throw new CharacterAlreadyExistsException(newName);
+        }
+
         if (dto.getBirthYear() != null && dto.getDeathYear() != null 
                 && dto.getBirthYear() > dto.getDeathYear()) {
             logger.warn("Invalid date range for character update: {} (birth: {}, death: {})", 

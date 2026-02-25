@@ -52,7 +52,7 @@ public class GlobalExceptionHandler {
             HttpServletRequest request) {
 
         String traceId = getTraceId();
-        logError(traceId, request, ex, HttpStatus.NOT_FOUND);
+        logWarn(traceId, request, ex);
 
         ErrorResponse response = new ErrorResponse(
                 HttpStatus.NOT_FOUND.value(),

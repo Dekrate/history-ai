@@ -159,6 +159,7 @@ class CharacterApiIntegrationTest {
     }
 
     @Test
+    @Order(7)
     void createCharacter_InvalidYears_ShouldReturn400() {
         HistoricalCharacterDTO dto = new HistoricalCharacterDTO();
         dto.setName("Test Character");
@@ -173,6 +174,7 @@ class CharacterApiIntegrationTest {
     }
 
     @Test
+    @Order(8)
     void getCharacter_NotFound_ShouldReturn404() {
         UUID randomId = UUID.randomUUID();
         ResponseEntity<String> response = restTemplate.getForEntity(
