@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Integration tests for Character API endpoints using Testcontainers.
+ * Requires Docker to run.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
