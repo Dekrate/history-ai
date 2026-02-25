@@ -6,6 +6,7 @@ import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -18,7 +19,7 @@ public interface HistoricalCharacterRepository extends JpaRepository<HistoricalC
     List<HistoricalCharacter> findByNationality(String nationality);
 
     @Query("SELECT c FROM HistoricalCharacter c WHERE LOWER(c.name) LIKE LOWER(CONCAT('%', :query, '%'))")
-    List<HistoricalCharacter> searchByName(String query);
+    List<HistoricalCharacter> searchByName(@Param("query") String query);
 
     boolean existsByName(String name);
 }

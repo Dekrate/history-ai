@@ -30,7 +30,7 @@ public class CharacterService {
      *
      * @param repository the character repository
      */
-    public CharacterService(HistoricalCharacterRepository repository) {
+    public CharacterService(final HistoricalCharacterRepository repository) {
         this.repository = repository;
     }
 
@@ -53,7 +53,7 @@ public class CharacterService {
      * @param id the character UUID
      * @return optional containing the character DTO if found
      */
-    public Optional<HistoricalCharacterDTO> findById(UUID id) {
+    public Optional<HistoricalCharacterDTO> findById(final UUID id) {
         logger.debug("Finding character by id: {}", id);
         return repository.findById(id)
                 .map(HistoricalCharacterDTO::fromEntity);
@@ -65,7 +65,7 @@ public class CharacterService {
      * @param name the character name
      * @return optional containing the character DTO if found
      */
-    public Optional<HistoricalCharacterDTO> findByName(String name) {
+    public Optional<HistoricalCharacterDTO> findByName(final String name) {
         logger.debug("Finding character by name: {}", name);
         return repository.findByName(name)
                 .map(HistoricalCharacterDTO::fromEntity);

@@ -1,6 +1,7 @@
 package com.historyai.integration;
 
 import com.historyai.dto.HistoricalCharacterDTO;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -25,33 +26,27 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Integration tests for Character API endpoints using Testcontainers.
+ * Requires Docker to run.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class CharacterApiIntegrationTest {
 
-    static PostgreSQLContainer<?> postgresContainer;
-    static String jdbcUrl;
-    static String username;
-    static String password;
+    static PostgreSQLContainer<?> postgresContainer = new PostgreSQLContainer<>("postgres:16-alpine")
+            .withDatabaseName("history_ai")
+            .withUsername("postgres")
+            .withPassword("postgres");
 
     static {
-        postgresContainer = new PostgreSQLContainer<>("postgres:16-alpine")
-                .withDatabaseName("history_ai")
-                .withUsername("postgres")
-                .withPassword("postgres");
         postgresContainer.start();
-        jdbcUrl = postgresContainer.getJdbcUrl();
-        username = postgresContainer.getUsername();
-        password = postgresContainer.getPassword();
     }
 
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", () -> jdbcUrl);
-        registry.add("spring.datasource.username", () -> username);
-        registry.add("spring.datasource.password", () -> password);
+        registry.add("spring.datasource.url", postgresContainer::getJdbcUrl);
+        registry.add("spring.datasource.username", postgresContainer::getUsername);
+        registry.add("spring.datasource.password", postgresContainer::getPassword);
         registry.add("spring.datasource.driver-class-name", () -> "org.postgresql.Driver");
     }
 
@@ -67,6 +62,13 @@ class CharacterApiIntegrationTest {
     @BeforeAll
     void setUp() {
         baseUrl = "http://localhost:" + port + "/api/characters";
+    }
+
+    @AfterAll
+    static void tearDown() {
+        if (postgresContainer != null && postgresContainer.isRunning()) {
+            postgresContainer.stop();
+        }
     }
 
     @Test
