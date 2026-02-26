@@ -209,7 +209,7 @@ public class FactCheckService {
         
         FactCheckResult.VerificationResult verification = FactCheckResult.VerificationResult.UNVERIFIABLE;
         float confidence = 0.5f;
-        String explanation = ollamaResponse;
+        String explanation = "";
         
         String upperResponse = ollamaResponse.toUpperCase();
         
@@ -232,6 +232,12 @@ public class FactCheckService {
             } catch (NumberFormatException e) {
                 LOG.warn("Could not parse confidence value");
             }
+        }
+        
+        Pattern explanationPattern = Pattern.compile("EXPLANATION:\\s*(.+?)(?:\\nSOURCE:|$)", Pattern.DOTALL);
+        Matcher explanationMatcher = explanationPattern.matcher(ollamaResponse);
+        if (explanationMatcher.find()) {
+            explanation = explanationMatcher.group(1).trim();
         }
         
         String source = wikiContext != null ? "Wikipedia - " + wikiContext.title() : "Ollama LLM";
