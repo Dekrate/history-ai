@@ -128,8 +128,7 @@ public class FactCheckService {
         
         String prompt = buildVerificationPrompt(claim, characterContext, wikiContext);
         
-        String model = "llama3.2:3b";
-        String ollamaResponse = ollamaClient.generate(model, prompt);
+        String ollamaResponse = ollamaClient.generate(prompt);
         
         return parseOllamaResponse(claim, ollamaResponse, wikiContext);
     }
