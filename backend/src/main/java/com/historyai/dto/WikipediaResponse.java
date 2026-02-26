@@ -9,23 +9,22 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record WikipediaResponse(
-    /** The title of the Wikipedia article */
-    @JsonProperty("title")
+		@JsonProperty("title")
     String title,
     
-    /** The extract/summary of the article */
+    /* The extract/summary of the article */
     @JsonProperty("extract")
     String extract,
     
-    /** Brief description of the article */
+    /* Brief description of the article */
     @JsonProperty("description")
     String description,
     
-    /** Thumbnail image information */
+    /* Thumbnail image information */
     @JsonProperty("thumbnail")
     Thumbnail thumbnail,
     
-    /** Content URLs for the article */
+    /* Content URLs for the article */
     @JsonProperty("content_urls")
     ContentUrls contentUrls
 ) {
@@ -35,13 +34,13 @@ public record WikipediaResponse(
      */
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record Thumbnail(
-        /** URL of the thumbnail image */
+        /* URL of the thumbnail image */
         @JsonProperty("source")
         String source,
-        /** Width of the image */
+        /* Width of the image */
         @JsonProperty("width")
         int width,
-        /** Height of the image */
+        /* Height of the image */
         @JsonProperty("height")
         int height
     ) {}
@@ -51,10 +50,10 @@ public record WikipediaResponse(
      */
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record ContentUrls(
-        /** Desktop URL information */
+        /* Desktop URL information */
         @JsonProperty("desktop")
         UrlInfo desktop,
-        /** Mobile URL information */
+        /* Mobile URL information */
         @JsonProperty("mobile")
         UrlInfo mobile
     ) {}
@@ -64,7 +63,7 @@ public record WikipediaResponse(
      */
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record UrlInfo(
-        /** The URL string */
+        /* The URL string */
         @JsonProperty("page")
         String page
     ) {}
