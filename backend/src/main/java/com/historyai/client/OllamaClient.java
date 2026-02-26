@@ -1,10 +1,14 @@
 package com.historyai.client;
 
 import java.time.Duration;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
@@ -30,7 +34,7 @@ public class OllamaClient {
      */
     public OllamaClient(
             @Value("${spring.ai.ollama.base-url:http://localhost:11434}") String baseUrl,
-            @Value("${spring.ai.ollama.chat.options.model:bielik}") String defaultModel,
+            @Value("${spring.ai.ollama.chat.options.model:SpeakLeash/bielik-11b-v3.0-instruct:bf16}") String defaultModel,
             RestTemplateBuilder restTemplateBuilder) {
         this.baseUrl = baseUrl;
         this.defaultModel = defaultModel;
@@ -64,14 +68,22 @@ public class OllamaClient {
 
         String url = baseUrl + "/api/generate";
         
-        var request = new GenerateRequest(model, prompt);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        
+        String requestBody = String.format(
+                "{\"model\": \"%s\", \"prompt\": \"%s\", \"stream\": false}",
+                model,
+                escapeJson(prompt)
+        );
+        
+        HttpEntity<String> request = new HttpEntity<>(requestBody, headers);
         
         try {
-            GenerateResponse response = restTemplate.postForObject(
-                    url, request, GenerateResponse.class);
+            String response = restTemplate.postForObject(url, request, String.class);
             
-            if (response != null && response.response() != null) {
-                return response.response();
+            if (response != null) {
+                return parseNdjsonResponse(response);
             }
             return "";
         } catch (Exception e) {
@@ -81,14 +93,56 @@ public class OllamaClient {
     }
 
     /**
-     * Request payload for Ollama generate API.
+     * Parses NDJSON response to extract the response text.
+     *
+     * @param ndjson the NDJSON response string
+     * @return the extracted response text
      */
-    public record GenerateRequest(String model, String prompt) {}
-    
+    private String parseNdjsonResponse(String ndjson) {
+        String[] lines = ndjson.split("\n");
+        StringBuilder response = new StringBuilder();
+        
+        for (String line : lines) {
+            line = line.trim();
+            if (line.isEmpty()) continue;
+            
+            if (line.startsWith("{")) {
+                int responseStart = line.indexOf("\"response\":\"");
+                if (responseStart >= 0) {
+                    responseStart += 11;
+                    int responseEnd = line.indexOf("\"", responseStart);
+                    if (responseEnd > responseStart) {
+                        String part = line.substring(responseStart, responseEnd);
+                        response.append(unescapeJson(part));
+                    }
+                }
+            }
+        }
+        
+        return response.toString();
+    }
+
     /**
-     * Response payload from Ollama generate API.
+     * Escapes special characters for JSON string.
      */
-    public record GenerateResponse(String model, String response, boolean done) {}
+    private String escapeJson(String s) {
+        return s.replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("\n", "\\n")
+                .replace("\r", "\\r")
+                .replace("\t", "\\t");
+    }
+
+    /**
+     * Unescapes special characters in JSON string.
+     */
+    private String unescapeJson(String s) {
+        return s.replace("\\n", "\n")
+                .replace("\\r", "\r")
+                .replace("\\t", "\t")
+                .replace("\\\"", "\"")
+                .replace("\\\\", "\\");
+    }
     
     /**
      * Exception thrown when Ollama API call fails.
