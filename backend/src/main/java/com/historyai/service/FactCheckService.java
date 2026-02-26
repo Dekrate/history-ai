@@ -211,14 +211,17 @@ public class FactCheckService {
         float confidence = 0.5f;
         String explanation = "";
         
-        String upperResponse = ollamaResponse.toUpperCase();
-        
-        if (upperResponse.contains("TRUE") || upperResponse.contains("WERYFIKACJA: PRAWDA")) {
-            verification = FactCheckResult.VerificationResult.VERIFIED;
-        } else if (upperResponse.contains("FALSE") || upperResponse.contains("WERYFIKACJA: FAŁSZ")) {
-            verification = FactCheckResult.VerificationResult.FALSE;
-        } else if (upperResponse.contains("PARTIAL") || upperResponse.contains("CZEŚCIOWO")) {
-            verification = FactCheckResult.VerificationResult.PARTIAL;
+        Pattern verificationPattern = Pattern.compile("^VERIFICATION:\\s*(\\w+)", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE);
+        Matcher verificationMatcher = verificationPattern.matcher(ollamaResponse);
+        if (verificationMatcher.find()) {
+            String result = verificationMatcher.group(1).toUpperCase();
+            if ("TRUE".equals(result) || "PRAWDA".equals(result)) {
+                verification = FactCheckResult.VerificationResult.VERIFIED;
+            } else if ("FALSE".equals(result) || "FAŁSZ".equals(result)) {
+                verification = FactCheckResult.VerificationResult.FALSE;
+            } else if ("PARTIAL".equals(result) || "CZEŚCIOWO".equals(result)) {
+                verification = FactCheckResult.VerificationResult.PARTIAL;
+            }
         }
         
         LOG.debug("Parsed verification: {}", verification);
