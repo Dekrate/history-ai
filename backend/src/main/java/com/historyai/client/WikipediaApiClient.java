@@ -7,18 +7,27 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
+/**
+ * Client for interacting with the Wikipedia REST API.
+ * Retrieves summary information about historical characters and topics.
+ */
 @Component
 public class WikipediaApiClient {
 
-    private static final Logger logger = LoggerFactory.getLogger(WikipediaApiClient.class);
+    private static final Logger LOG = LoggerFactory.getLogger(WikipediaApiClient.class);
     private static final String WIKIPEDIA_API_BASE = "https://en.wikipedia.org/api/rest_v1";
 
     private final RestTemplate restTemplate;
 
+    /**
+     * Constructs a new WikipediaApiClient.
+     *
+     * @param baseUrl the base URL of the Wikipedia API
+     * @param restTemplateBuilder the REST template builder for configuring timeouts
+     */
     public WikipediaApiClient(
             @Value("${wikipedia.api.base-url:${WIKIPEDIA_API_BASE}}") String baseUrl,
             RestTemplateBuilder restTemplateBuilder) {
@@ -31,8 +40,16 @@ public class WikipediaApiClient {
                 .build();
     }
 
+    /**
+     * Retrieves a summary for a character from Wikipedia.
+     *
+     * @param characterName the name of the character to look up
+     * @return WikipediaResponse containing the summary
+     * @throws CharacterNotFoundInWikipediaException if the character is not found
+     * @throws WikipediaApiException if the API call fails
+     */
     public WikipediaResponse getCharacterSummary(String characterName) {
-        logger.debug("Fetching Wikipedia summary for: {}", characterName);
+        LOG.debug("Fetching Wikipedia summary for: {}", characterName);
 
         try {
             WikipediaResponse result = restTemplate.getForObject(
@@ -45,16 +62,16 @@ public class WikipediaApiClient {
                 throw new CharacterNotFoundInWikipediaException(characterName);
             }
 
-            logger.debug("Successfully fetched Wikipedia summary for: {}", characterName);
+            LOG.debug("Successfully fetched Wikipedia summary for: {}", characterName);
             return result;
 
         } catch (CharacterNotFoundInWikipediaException e) {
             throw e;
         } catch (org.springframework.web.client.HttpClientErrorException.NotFound e) {
-            logger.warn("Character not found in Wikipedia: {}", characterName);
+            LOG.warn("Character not found in Wikipedia: {}", characterName);
             throw new CharacterNotFoundInWikipediaException(characterName);
         } catch (Exception e) {
-            logger.error("Error fetching Wikipedia data for {}: {}", characterName, e.getMessage());
+            LOG.error("Error fetching Wikipedia data for {}: {}", characterName, e.getMessage());
             throw new WikipediaApiException("Failed to fetch Wikipedia data", e);
         }
     }
