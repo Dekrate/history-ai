@@ -2,6 +2,7 @@ package com.historyai.service;
 
 import com.historyai.client.WikipediaApiClient;
 import com.historyai.dto.WikipediaResponse;
+import com.historyai.exception.CharacterNotFoundInWikipediaException;
 import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,6 +30,9 @@ public class WikipediaService {
     }
 
     private WikipediaResponse getCharacterInfoFallback(String characterName, Throwable t) {
+        if (t instanceof CharacterNotFoundInWikipediaException) {
+            throw (CharacterNotFoundInWikipediaException) t;
+        }
         logger.error("Rate limit exceeded or error for {}: {}", characterName, t.getMessage());
         throw new RuntimeException("Wikipedia API rate limit exceeded. Please try again later.");
     }

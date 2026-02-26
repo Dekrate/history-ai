@@ -25,7 +25,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @Order(Ordered.HIGHEST_PRECEDENCE)
 public class TraceIdFilter extends OncePerRequestFilter {
 
-    private static final org.slf4j.Logger LOG = org.slf4j.LoggerFactory.getLogger(TraceIdFilter.class);
+    private static final Logger LOG = LoggerFactory.getLogger(TraceIdFilter.class);
     private static final String TRACE_ID_HEADER = "X-Trace-Id";
     private static final String TRACE_ID_MDC_KEY = "traceId";
 
