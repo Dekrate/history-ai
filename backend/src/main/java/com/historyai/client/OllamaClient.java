@@ -82,6 +82,8 @@ public class OllamaClient {
         try {
             String response = restTemplate.postForObject(url, request, String.class);
             
+            LOG.debug("Raw Ollama response: {}", response);
+            
             if (response != null) {
                 return parseNdjsonResponse(response);
             }
@@ -93,33 +95,40 @@ public class OllamaClient {
     }
 
     /**
-     * Parses NDJSON response to extract the response text.
+     * Parses JSON response to extract the response text.
      *
-     * @param ndjson the NDJSON response string
+     * @param json the JSON response string
      * @return the extracted response text
      */
-    private String parseNdjsonResponse(String ndjson) {
-        String[] lines = ndjson.split("\n");
-        StringBuilder response = new StringBuilder();
-        
-        for (String line : lines) {
-            line = line.trim();
-            if (line.isEmpty()) continue;
-            
-            if (line.startsWith("{")) {
-                int responseStart = line.indexOf("\"response\":\"");
-                if (responseStart >= 0) {
-                    responseStart += 11;
-                    int responseEnd = line.indexOf("\"", responseStart);
-                    if (responseEnd > responseStart) {
-                        String part = line.substring(responseStart, responseEnd);
-                        response.append(unescapeJson(part));
+    private String parseNdjsonResponse(String json) {
+        try {
+            int responseStart = json.indexOf("\"response\":\"");
+            if (responseStart >= 0) {
+                responseStart += 11;
+                int responseEnd = responseStart;
+                boolean escaped = false;
+                for (int i = responseStart; i < json.length(); i++) {
+                    char c = json.charAt(i);
+                    if (escaped) {
+                        escaped = false;
+                        continue;
+                    }
+                    if (c == '\\') {
+                        escaped = true;
+                        continue;
+                    }
+                    if (c == '"') {
+                        responseEnd = i;
+                        break;
                     }
                 }
+                String response = json.substring(responseStart, responseEnd);
+                return unescapeJson(response);
             }
+        } catch (Exception e) {
+            LOG.warn("Error parsing response: {}", e.getMessage());
         }
-        
-        return response.toString();
+        return "";
     }
 
     /**
