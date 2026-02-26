@@ -26,14 +26,18 @@ public class WikipediaApiClient {
      * Constructs a new WikipediaApiClient.
      *
      * @param baseUrl the base URL of the Wikipedia API
+     * @param connectTimeout connection timeout in seconds
+     * @param readTimeout read timeout in seconds
      * @param restTemplateBuilder the REST template builder for configuring timeouts
      */
     public WikipediaApiClient(
-            @Value("${wikipedia.api.base-url:${WIKIPEDIA_API_BASE}}") String baseUrl,
+            @Value("${wikipedia.api.base-url:https://en.wikipedia.org/api/rest_v1}") String baseUrl,
+            @Value("${wikipedia.api.connect-timeout:10}") int connectTimeout,
+            @Value("${wikipedia.api.read-timeout:15}") int readTimeout,
             RestTemplateBuilder restTemplateBuilder) {
         this.restTemplate = restTemplateBuilder
-                .setConnectTimeout(java.time.Duration.ofSeconds(10))
-                .setReadTimeout(java.time.Duration.ofSeconds(15))
+                .setConnectTimeout(java.time.Duration.ofSeconds(connectTimeout))
+                .setReadTimeout(java.time.Duration.ofSeconds(readTimeout))
                 .rootUri(baseUrl)
                 .defaultHeader("Accept", "application/json")
                 .defaultHeader("User-Agent", "HistoryAI/1.0 (contact: info@historyai.app)")
