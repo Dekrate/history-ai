@@ -205,25 +205,30 @@ public class FactCheckService {
      * @return the parsed FactCheckResult
      */
     private FactCheckResult parseOllamaResponse(String claim, String ollamaResponse, WikipediaResponse wikiContext) {
+        LOG.debug("Parsing Ollama response: {}", ollamaResponse);
+        
         FactCheckResult.VerificationResult verification = FactCheckResult.VerificationResult.UNVERIFIABLE;
         float confidence = 0.5f;
         String explanation = ollamaResponse;
         
         String upperResponse = ollamaResponse.toUpperCase();
         
-        if (upperResponse.contains("TRUE")) {
+        if (upperResponse.contains("TRUE") || upperResponse.contains("WERYFIKACJA: PRAWDA")) {
             verification = FactCheckResult.VerificationResult.VERIFIED;
-        } else if (upperResponse.contains("FALSE")) {
+        } else if (upperResponse.contains("FALSE") || upperResponse.contains("WERYFIKACJA: FAŁSZ")) {
             verification = FactCheckResult.VerificationResult.FALSE;
-        } else if (upperResponse.contains("PARTIAL")) {
+        } else if (upperResponse.contains("PARTIAL") || upperResponse.contains("CZEŚCIOWO")) {
             verification = FactCheckResult.VerificationResult.PARTIAL;
         }
+        
+        LOG.debug("Parsed verification: {}", verification);
         
         Pattern confidencePattern = Pattern.compile("CONFIDENCE:\\s*([0-9.]+)");
         Matcher matcher = confidencePattern.matcher(ollamaResponse);
         if (matcher.find()) {
             try {
                 confidence = Float.parseFloat(matcher.group(1));
+                LOG.debug("Parsed confidence: {}", confidence);
             } catch (NumberFormatException e) {
                 LOG.warn("Could not parse confidence value");
             }

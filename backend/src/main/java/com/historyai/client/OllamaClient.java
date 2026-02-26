@@ -1,7 +1,8 @@
 package com.historyai.client;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Duration;
-import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,6 +23,7 @@ public class OllamaClient {
     private static final Logger LOG = LoggerFactory.getLogger(OllamaClient.class);
 
     private final RestTemplate restTemplate;
+    private final ObjectMapper objectMapper;
     private final String baseUrl;
     private final String defaultModel;
 
@@ -38,6 +40,7 @@ public class OllamaClient {
             RestTemplateBuilder restTemplateBuilder) {
         this.baseUrl = baseUrl;
         this.defaultModel = defaultModel;
+        this.objectMapper = new ObjectMapper();
         this.restTemplate = restTemplateBuilder
                 .connectTimeout(Duration.ofSeconds(30))
                 .readTimeout(Duration.ofSeconds(120))
@@ -102,28 +105,10 @@ public class OllamaClient {
      */
     private String parseNdjsonResponse(String json) {
         try {
-            int responseStart = json.indexOf("\"response\":\"");
-            if (responseStart >= 0) {
-                responseStart += 11;
-                int responseEnd = responseStart;
-                boolean escaped = false;
-                for (int i = responseStart; i < json.length(); i++) {
-                    char c = json.charAt(i);
-                    if (escaped) {
-                        escaped = false;
-                        continue;
-                    }
-                    if (c == '\\') {
-                        escaped = true;
-                        continue;
-                    }
-                    if (c == '"') {
-                        responseEnd = i;
-                        break;
-                    }
-                }
-                String response = json.substring(responseStart, responseEnd);
-                return unescapeJson(response);
+            JsonNode root = objectMapper.readTree(json);
+            JsonNode responseNode = root.get("response");
+            if (responseNode != null) {
+                return responseNode.asText();
             }
         } catch (Exception e) {
             LOG.warn("Error parsing response: {}", e.getMessage());
