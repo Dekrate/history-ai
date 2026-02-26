@@ -4,6 +4,8 @@ import com.historyai.dto.ErrorResponse;
 import com.historyai.dto.ErrorResponse.FieldError;
 import com.historyai.exception.CharacterAlreadyExistsException;
 import com.historyai.exception.CharacterNotFoundException;
+import com.historyai.exception.CharacterNotFoundInWikipediaException;
+import com.historyai.exception.WikipediaApiException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
@@ -87,6 +89,42 @@ public class GlobalExceptionHandler {
         ).withTraceId(traceId);
 
         return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+    }
+
+    @ExceptionHandler(CharacterNotFoundInWikipediaException.class)
+    public ResponseEntity<ErrorResponse> handleWikipediaCharacterNotFound(
+            CharacterNotFoundInWikipediaException ex,
+            HttpServletRequest request) {
+
+        String traceId = getTraceId();
+        logWarn(traceId, request, ex);
+
+        ErrorResponse response = new ErrorResponse(
+                HttpStatus.NOT_FOUND.value(),
+                HttpStatus.NOT_FOUND.getReasonPhrase(),
+                ex.getMessage(),
+                request.getRequestURI()
+        ).withTraceId(traceId);
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+    }
+
+    @ExceptionHandler(WikipediaApiException.class)
+    public ResponseEntity<ErrorResponse> handleWikipediaApiError(
+            WikipediaApiException ex,
+            HttpServletRequest request) {
+
+        String traceId = getTraceId();
+        logError(traceId, request, ex, HttpStatus.SERVICE_UNAVAILABLE);
+
+        ErrorResponse response = new ErrorResponse(
+                HttpStatus.SERVICE_UNAVAILABLE.value(),
+                HttpStatus.SERVICE_UNAVAILABLE.getReasonPhrase(),
+                "Wikipedia API is temporarily unavailable",
+                request.getRequestURI()
+        ).withTraceId(traceId);
+
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(response);
     }
 
     /**
