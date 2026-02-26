@@ -116,59 +116,48 @@ public class FactCheckService {
     public FactCheckResult verifyClaim(String claim, String characterContext) {
         LOG.debug("Verifying claim: {}", claim);
         
-        String keywords = extractKeywords(claim);
-        LOG.debug("Extracted keywords: {}", keywords);
-        
         WikipediaResponse wikiContext = null;
-        try {
-            wikiContext = wikipediaService.getCharacterInfo(keywords);
-        } catch (Exception e) {
-            LOG.warn("Could not fetch Wikipedia context for keywords: {}", keywords);
+        
+        // First try characterContext if available
+        if (characterContext != null && !characterContext.isBlank()) {
+            try {
+                wikiContext = wikipediaService.getCharacterInfo(characterContext);
+                LOG.debug("Found Wikipedia context for character: {}", characterContext);
+            } catch (Exception e) {
+                LOG.warn("Could not fetch Wikipedia context for character: {}", characterContext);
+            }
+        }
+        
+        // Fallback to extracted keywords from claim
+        if (wikiContext == null) {
+            String keywords = extractFirstNameLastName(claim);
+            try {
+                wikiContext = wikipediaService.getCharacterInfo(keywords);
+                LOG.debug("Found Wikipedia context for keywords: {}", keywords);
+            } catch (Exception e) {
+                LOG.warn("Could not fetch Wikipedia context for keywords: {}", keywords);
+            }
         }
         
         String prompt = buildVerificationPrompt(claim, characterContext, wikiContext);
         
-        String model = "llama3.2:3b";
-        String ollamaResponse = ollamaClient.generate(model, prompt);
+        String ollamaResponse = ollamaClient.generate(prompt);
         
         return parseOllamaResponse(claim, ollamaResponse, wikiContext);
     }
 
     /**
-     * Extracts keywords from a claim for Wikipedia lookup.
+     * Extracts first two words as potential name for Wikipedia lookup.
      *
-     * @param claim the claim to extract keywords from
-     * @return space-separated keywords
+     * @param claim the claim to extract name from
+     * @return first two words
      */
-    private String extractKeywords(String claim) {
+    private String extractFirstNameLastName(String claim) {
         String[] words = claim.split("\\s+");
-        StringBuilder keywords = new StringBuilder();
-        
-        for (String word : words) {
-            if (word.length() > 4 && !isCommonWord(word)) {
-                if (keywords.length() > 0) {
-                    keywords.append(" ");
-                }
-                keywords.append(word);
-            }
+        if (words.length >= 2) {
+            return words[0] + " " + words[1];
         }
-        
-        return keywords.length() > 0 ? keywords.toString() : claim;
-    }
-
-    /**
-     * Checks if a word is a common word that should be excluded from keywords.
-     *
-     * @param word the word to check
-     * @return true if the word is common, false otherwise
-     */
-    private boolean isCommonWord(String word) {
-        String[] common = {"był", "jest", "była", "było", "byli", "oraz", "dla", "tego", "który", "która"};
-        String lower = word.toLowerCase();
-        for (String w : common) {
-            if (lower.equals(w)) return true;
-        }
-        return false;
+        return words[0];
     }
 
     /**
