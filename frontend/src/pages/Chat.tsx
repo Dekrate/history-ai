@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Send, Shield, Loader2, CheckCircle, XCircle, HelpCircle, MessageCircle, Bot, ChevronUp, ChevronDown } from 'lucide-react';
 import { characterApi } from '../services/api';
+import { formatStreamText, parseFinalEvent, parseStructuredResult } from '../utils/factcheck';
 import type { FactCheckResult } from '../types';
 
 interface Message {
@@ -122,47 +123,6 @@ export function Chat() {
 
       const eventSource = new EventSource(url + '?' + urlParams.toString());
 
-      const formatStreamText = (text: string) =>
-        text
-          .replace(/([.,!?;:])(\S)/g, '$1 $2')
-          .replace(/\s*(VERIFICATION:)/gi, '\n$1 ')
-          .replace(/\s*(CONFIDENCE:)/gi, '\n$1 ')
-          .replace(/\s*(EXPLANATION:)/gi, '\n$1 ')
-          .replace(/\s*(SOURCE:)/gi, '\n$1 ')
-          .replace(/\n+/g, '\n')
-          .trimStart();
-
-      const parseStructuredResult = (text: string) => {
-        const normalized = formatStreamText(text);
-        const normalizedForConfidence = normalized
-          .replace(/CONFIDENCE:\s*([0-9])\s*[,\.]\s*([0-9]+)/i, 'CONFIDENCE: $1.$2')
-          .replace(/CONFIDENCE:\s*([0-9])\s+([0-9]+)/i, 'CONFIDENCE: $1.$2');
-        const verificationMatch = normalized.match(/VERIFICATION:\s*([A-Z_]+)/i);
-        const confidenceMatch = normalizedForConfidence.match(/CONFIDENCE:\s*([0-9]*\.?[0-9]+)/i);
-        const explanationMatch = normalized.match(/EXPLANATION:\s*([\s\S]*?)(?:\nSOURCE:|$)/i);
-        const sourceMatch = normalized.match(/SOURCE:\s*([\s\S]*?)$/i);
-
-        if (!verificationMatch && !confidenceMatch && !explanationMatch && !sourceMatch) {
-          return null;
-        }
-
-        const rawVerification = verificationMatch?.[1]?.toUpperCase() ?? 'VERIFIED';
-        const mappedVerification =
-          rawVerification === 'TRUE' ? 'VERIFIED' :
-          rawVerification === 'FALSE' ? 'FALSE' :
-          rawVerification === 'PARTIAL' ? 'PARTIAL' :
-          rawVerification === 'UNVERIFIABLE' ? 'UNVERIFIABLE' :
-          rawVerification;
-
-        return {
-          verification: mappedVerification,
-          confidence: confidenceMatch ? Number(confidenceMatch[1]) : 0.9,
-          explanation: explanationMatch?.[1]?.trim() ?? normalized,
-          source: sourceMatch?.[1]?.trim() ?? 'AI',
-          formatted: normalized,
-        };
-      };
-
       const appendChunk = (data: string) => {
         if (data.trim() === '') return;
         currentContent += data;
@@ -218,8 +178,8 @@ export function Chat() {
 
       eventSource.addEventListener('final', (event) => {
         const data = (event as MessageEvent).data;
-        try {
-          const parsedResult = JSON.parse(data) as FactCheckResult;
+        const parsedResult = parseFinalEvent(data);
+        if (parsedResult) {
           currentContent = parsedResult.explanation || '';
           eventSource.close();
           setIsVerifying(false);
@@ -235,10 +195,10 @@ export function Chat() {
             )
           );
           finalized = true;
-        } catch (error) {
-          currentContent = data;
-          completeStream();
+          return;
         }
+        currentContent = data;
+        completeStream();
       });
 
       eventSource.addEventListener('complete', () => {
