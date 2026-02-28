@@ -49,12 +49,12 @@ class FactCheckServiceTest {
                 null,
                 null
         );
-        when(wikiquoteService.getQuotes(anyString())).thenReturn(List.of());
-        when(promptBuilder.build(anyString(), anyString(), any(), any())).thenReturn("prompt");
     }
 
     @Test
     void factCheck_WithValidClaim_ShouldReturnVerified() {
+        when(wikiquoteService.getQuotes(anyString())).thenReturn(List.of());
+        when(promptBuilder.build(anyString(), anyString(), any(), any())).thenReturn("prompt");
         when(wikipediaService.getCharacterInfo("Mikołaj Kopernik"))
                 .thenReturn(wikiResponse);
         when(ollamaClient.generate(anyString()))
@@ -73,6 +73,8 @@ class FactCheckServiceTest {
 
     @Test
     void factCheck_WithFalseClaim_ShouldReturnFalse() {
+        when(wikiquoteService.getQuotes(anyString())).thenReturn(List.of());
+        when(promptBuilder.build(anyString(), anyString(), any(), any())).thenReturn("prompt");
         when(wikipediaService.getCharacterInfo("Mikołaj Kopernik"))
                 .thenReturn(wikiResponse);
         when(ollamaClient.generate(anyString()))
@@ -90,6 +92,8 @@ class FactCheckServiceTest {
 
     @Test
     void verifyClaim_WithValidData_ShouldParseCorrectly() {
+        when(wikiquoteService.getQuotes(anyString())).thenReturn(List.of());
+        when(promptBuilder.build(anyString(), anyString(), any(), any())).thenReturn("prompt");
         when(wikipediaService.getCharacterInfo("Test"))
                 .thenReturn(wikiResponse);
         when(ollamaClient.generate(anyString()))
@@ -108,6 +112,8 @@ class FactCheckServiceTest {
 
     @Test
     void verifyClaim_WithFalseVerification_ShouldReturnFalse() {
+        when(wikiquoteService.getQuotes(anyString())).thenReturn(List.of());
+        when(promptBuilder.build(anyString(), anyString(), any(), any())).thenReturn("prompt");
         when(wikipediaService.getCharacterInfo("Test"))
                 .thenReturn(wikiResponse);
         when(ollamaClient.generate(anyString()))
@@ -120,6 +126,8 @@ class FactCheckServiceTest {
 
     @Test
     void verifyClaim_WithNoVerificationKeyword_ShouldReturnUnverifiable() {
+        when(wikiquoteService.getQuotes(anyString())).thenReturn(List.of());
+        when(promptBuilder.build(anyString(), anyString(), any(), any())).thenReturn("prompt");
         when(wikipediaService.getCharacterInfo("Test"))
                 .thenReturn(wikiResponse);
         when(ollamaClient.generate(anyString()))
