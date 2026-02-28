@@ -6,6 +6,7 @@ import com.historyai.dto.FactCheckResult;
 import com.historyai.dto.WikipediaResponse;
 import com.historyai.exception.CharacterNotFoundInWikipediaException;
 import com.historyai.service.FactCheckService;
+import com.historyai.service.WikiquoteService;
 import com.historyai.service.WikipediaService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
@@ -39,11 +40,14 @@ public class FactCheckController {
     private final FactCheckService factCheckService;
     private final OllamaClient ollamaClient;
     private final WikipediaService wikipediaService;
+    private final WikiquoteService wikiquoteService;
 
-    public FactCheckController(FactCheckService factCheckService, OllamaClient ollamaClient, WikipediaService wikipediaService) {
+    public FactCheckController(FactCheckService factCheckService, OllamaClient ollamaClient,
+            WikipediaService wikipediaService, WikiquoteService wikiquoteService) {
         this.factCheckService = factCheckService;
         this.ollamaClient = ollamaClient;
         this.wikipediaService = wikipediaService;
+        this.wikiquoteService = wikiquoteService;
     }
 
     @PostMapping
@@ -91,7 +95,8 @@ public class FactCheckController {
                 LOG.warn("Error fetching Wikipedia: {}", e.getMessage());
             }
             
-            String prompt = buildStreamingPrompt(message, characterContext, wikiContext);
+            List<String> quotes = wikiquoteService.getQuotes(characterName);
+            String prompt = buildStreamingPrompt(message, characterContext, wikiContext, quotes);
             emitter.send(SseEmitter.event().name("prompt").data("Analyzing with AI..."));
             
             ollamaClient.generateStream(ollamaClient.getDefaultModel(), prompt, chunk -> {
@@ -151,7 +156,11 @@ public class FactCheckController {
         return c == '.' || c == ',' || c == '!' || c == '?' || c == ':' || c == ';' || c == ')';
     }
 
-    private String buildStreamingPrompt(String claim, String characterContext, WikipediaResponse wikiContext) {
+    private String buildStreamingPrompt(
+            String claim,
+            String characterContext,
+            WikipediaResponse wikiContext,
+            List<String> quotes) {
         StringBuilder prompt = new StringBuilder();
         prompt.append("You are a fact-checker for historical information. ");
         prompt.append("IMPORTANT: Write the EXPLANATION in the SAME language as the claim (e.g., if claim is in Polish, explain in Polish). Keep VERIFICATION, CONFIDENCE, SOURCE keywords in English.\n\n");
@@ -165,6 +174,14 @@ public class FactCheckController {
             prompt.append("- Title: ").append(wikiContext.title()).append("\n");
             if (wikiContext.extract() != null) {
                 prompt.append("- Summary: ").append(wikiContext.extract()).append("\n");
+            }
+            prompt.append("\n");
+        }
+
+        if (quotes != null && !quotes.isEmpty()) {
+            prompt.append("Relevant quotes from Wikiquote:\n");
+            for (String quote : quotes) {
+                prompt.append("- ").append(quote).append("\n");
             }
             prompt.append("\n");
         }

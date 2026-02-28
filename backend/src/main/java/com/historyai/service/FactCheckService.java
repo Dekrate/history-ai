@@ -22,6 +22,7 @@ public class FactCheckService {
 
     private final OllamaClient ollamaClient;
     private final WikipediaService wikipediaService;
+    private final WikiquoteService wikiquoteService;
 
     /**
      * Constructs a new FactCheckService.
@@ -29,9 +30,11 @@ public class FactCheckService {
      * @param ollamaClient the Ollama client for LLM interactions
      * @param wikipediaService the Wikipedia service for context retrieval
      */
-    public FactCheckService(OllamaClient ollamaClient, WikipediaService wikipediaService) {
+    public FactCheckService(OllamaClient ollamaClient, WikipediaService wikipediaService,
+            WikiquoteService wikiquoteService) {
         this.ollamaClient = ollamaClient;
         this.wikipediaService = wikipediaService;
+        this.wikiquoteService = wikiquoteService;
     }
 
     /**
@@ -113,7 +116,8 @@ public class FactCheckService {
             }
         }
         
-        String prompt = buildVerificationPrompt(claim, characterContext, wikiContext);
+        List<String> quotes = wikiquoteService.getQuotes(characterName);
+        String prompt = buildVerificationPrompt(claim, characterContext, wikiContext, quotes);
         
         String ollamaResponse = ollamaClient.generate(prompt);
         
@@ -155,7 +159,11 @@ public class FactCheckService {
      * @param wikiContext optional Wikipedia context
      * the prompt string
      */
-    private String buildVerificationPrompt(String claim, String characterContext, WikipediaResponse wikiContext) {
+    private String buildVerificationPrompt(
+            String claim,
+            String characterContext,
+            WikipediaResponse wikiContext,
+            List<String> quotes) {
         StringBuilder prompt = new StringBuilder();
         prompt.append("You are a fact-checker for historical information. ");
         prompt.append("IMPORTANT: Write the EXPLANATION in the SAME language as the claim (e.g., if claim is in Polish, explain in Polish). Keep VERIFICATION, CONFIDENCE, SOURCE keywords in English.\n\n");
@@ -169,6 +177,14 @@ public class FactCheckService {
             prompt.append("- Title: ").append(wikiContext.title()).append("\n");
             if (wikiContext.extract() != null) {
                 prompt.append("- Summary: ").append(wikiContext.extract()).append("\n");
+            }
+            prompt.append("\n");
+        }
+
+        if (quotes != null && !quotes.isEmpty()) {
+            prompt.append("Relevant quotes from Wikiquote:\n");
+            for (String quote : quotes) {
+                prompt.append("- ").append(quote).append("\n");
             }
             prompt.append("\n");
         }

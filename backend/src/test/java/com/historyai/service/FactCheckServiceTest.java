@@ -3,6 +3,7 @@ package com.historyai.service;
 import com.historyai.client.OllamaClient;
 import com.historyai.dto.FactCheckResult;
 import com.historyai.dto.WikipediaResponse;
+import com.historyai.service.WikiquoteService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,6 +26,9 @@ class FactCheckServiceTest {
     @Mock
     private WikipediaService wikipediaService;
 
+    @Mock
+    private WikiquoteService wikiquoteService;
+
     @InjectMocks
     private FactCheckService factCheckService;
 
@@ -40,6 +44,7 @@ class FactCheckServiceTest {
                 null,
                 null
         );
+        when(wikiquoteService.getQuotes(anyString())).thenReturn(List.of());
     }
 
     @Test
