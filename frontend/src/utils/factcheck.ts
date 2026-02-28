@@ -14,7 +14,7 @@ export const formatStreamText = (text: string) =>
 export const parseStructuredResult = (text: string): FactCheckResult | null => {
   const normalized = formatStreamText(text);
   const normalizedForConfidence = normalized
-    .replace(/CONFIDENCE:\s*([0-9])\s*[,\.]\s*([0-9]+)/i, 'CONFIDENCE: $1.$2')
+    .replace(/CONFIDENCE:\s*([0-9])\s*[,.]\s*([0-9]+)/i, 'CONFIDENCE: $1.$2')
     .replace(/CONFIDENCE:\s*([0-9])\s+([0-9]+)/i, 'CONFIDENCE: $1.$2');
 
   const verificationMatch = normalized.match(/VERIFICATION:\s*([A-Z_]+)/i);
