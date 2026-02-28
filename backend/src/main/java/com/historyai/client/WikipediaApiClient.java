@@ -3,6 +3,7 @@ package com.historyai.client;
 import com.historyai.dto.WikipediaResponse;
 import com.historyai.exception.CharacterNotFoundInWikipediaException;
 import com.historyai.exception.WikipediaApiException;
+import java.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,18 +27,18 @@ public class WikipediaApiClient {
      * Constructs a new WikipediaApiClient.
      *
      * @param baseUrl the base URL of the Wikipedia API
-     * @param connectTimeout connection timeout in seconds
-     * @param readTimeout read timeout in seconds
+     * @param connectTimeout connection timeout
+     * @param readTimeout read timeout
      * @param restTemplateBuilder the REST template builder for configuring timeouts
      */
     public WikipediaApiClient(
             @Value("${wikipedia.api.base-url:https://en.wikipedia.org/api/rest_v1}") String baseUrl,
-            @Value("${wikipedia.api.connect-timeout:10}") int connectTimeout,
-            @Value("${wikipedia.api.read-timeout:15}") int readTimeout,
+            @Value("${wikipedia.api.connect-timeout:10s}") Duration connectTimeout,
+            @Value("${wikipedia.api.read-timeout:15s}") Duration readTimeout,
             RestTemplateBuilder restTemplateBuilder) {
         this.restTemplate = restTemplateBuilder
-                .setConnectTimeout(java.time.Duration.ofSeconds(connectTimeout))
-                .setReadTimeout(java.time.Duration.ofSeconds(readTimeout))
+                .setConnectTimeout(connectTimeout)
+                .setReadTimeout(readTimeout)
                 .rootUri(baseUrl)
                 .defaultHeader("Accept", "application/json")
                 .defaultHeader("User-Agent", "HistoryAI/1.0 (contact: info@historyai.app)")
