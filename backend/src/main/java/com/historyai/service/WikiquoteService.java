@@ -30,11 +30,11 @@ public class WikiquoteService {
         this.wikiquoteApiClient = wikiquoteApiClient;
     }
 
-    @Cacheable(value = "wikiquote", key = "#characterName", unless = "#result == null")
     public List<String> getQuotes(String characterName) {
         return getQuotes(characterName, "pl");
     }
 
+    @Cacheable(value = "wikiquote", key = "#characterName + '|' + #lang", unless = "#result == null")
     public List<String> getQuotes(String characterName, String lang) {
         if (characterName == null || characterName.isBlank()) {
             return Collections.emptyList();
