@@ -19,6 +19,10 @@ public record WikipediaResponse(
     /* Brief description of the article */
     @JsonProperty("description")
     String description,
+
+    /* Wikidata item ID (e.g., Q12345) */
+    @JsonProperty("wikibase_item")
+    String wikibaseItem,
     
     /* Thumbnail image information */
     @JsonProperty("thumbnail")

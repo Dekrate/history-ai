@@ -25,6 +25,12 @@ spring:
     locations: classpath:db/migration
     baseline-on-migrate: true
 
+  mvc:
+    cors:
+      allowed-origins: http://localhost:5173,http://localhost:3000
+      allowed-methods: GET,POST,PUT,DELETE,OPTIONS
+      allowed-headers: "*"
+
   ai:
     ollama:
       base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
@@ -39,6 +45,11 @@ spring:
 
 server:
   port: ${SERVER_PORT:8080}
+  servlet:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
   tomcat:
     threads:
       virtual:

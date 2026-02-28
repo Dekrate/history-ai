@@ -2,7 +2,9 @@ package com.historyai.controller;
 
 import com.historyai.dto.FactCheckRequest;
 import com.historyai.dto.FactCheckResult;
+import com.historyai.service.FactCheckPromptBuilder;
 import com.historyai.service.FactCheckService;
+import com.historyai.service.WikiquoteService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -11,6 +13,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.Arrays;
 import java.util.List;
@@ -27,6 +30,15 @@ class FactCheckControllerTest {
     @Mock
     private FactCheckService factCheckService;
 
+    @Mock
+    private WikiquoteService wikiquoteService;
+
+    @Mock
+    private FactCheckPromptBuilder promptBuilder;
+
+    @Mock
+    private ObjectMapper objectMapper;
+
     @InjectMocks
     private FactCheckController controller;
 
@@ -35,7 +47,7 @@ class FactCheckControllerTest {
 
     @BeforeEach
     void setUp() {
-        request = new FactCheckRequest("Test message", "Test character");
+        request = new FactCheckRequest("Test message", "Test character", "Test context");
         
         FactCheckResult result = new FactCheckResult(
                 "Test claim",
@@ -49,7 +61,7 @@ class FactCheckControllerTest {
 
     @Test
     void factCheck_WithValidRequest_ShouldReturn200() {
-        when(factCheckService.factCheck(anyString(), anyString()))
+        when(factCheckService.factCheck(anyString(), anyString(), anyString()))
                 .thenReturn(results);
 
         ResponseEntity<List<FactCheckResult>> response = controller.factCheck(request);
@@ -64,13 +76,13 @@ class FactCheckControllerTest {
     @Test
     void factCheck_WithNullCharacterContext_ShouldPassNull() {
         request.setCharacterContext(null);
-        when(factCheckService.factCheck(anyString(), eq(null)))
+        when(factCheckService.factCheck(anyString(), eq("Test character"), eq(null)))
                 .thenReturn(results);
 
         ResponseEntity<List<FactCheckResult>> response = controller.factCheck(request);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        verify(factCheckService).factCheck("Test message", null);
+        verify(factCheckService).factCheck("Test message", "Test character", null);
     }
 
     @Test
@@ -82,7 +94,7 @@ class FactCheckControllerTest {
                 "Incorrect",
                 0.9f
         );
-        when(factCheckService.factCheck(anyString(), anyString()))
+        when(factCheckService.factCheck(anyString(), anyString(), anyString()))
                 .thenReturn(Arrays.asList(results.get(0), result2));
 
         ResponseEntity<List<FactCheckResult>> response = controller.factCheck(request);
@@ -93,7 +105,7 @@ class FactCheckControllerTest {
 
     @Test
     void factCheck_WithEmptyResults_ShouldReturnEmptyList() {
-        when(factCheckService.factCheck(anyString(), anyString()))
+        when(factCheckService.factCheck(anyString(), anyString(), anyString()))
                 .thenReturn(Arrays.asList());
 
         ResponseEntity<List<FactCheckResult>> response = controller.factCheck(request);
