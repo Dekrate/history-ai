@@ -23,6 +23,7 @@ public class FactCheckService {
     private final OllamaClient ollamaClient;
     private final WikipediaService wikipediaService;
     private final WikiquoteService wikiquoteService;
+    private final FactCheckPromptBuilder promptBuilder;
 
     /**
      * Constructs a new FactCheckService.
@@ -31,10 +32,11 @@ public class FactCheckService {
      * @param wikipediaService the Wikipedia service for context retrieval
      */
     public FactCheckService(OllamaClient ollamaClient, WikipediaService wikipediaService,
-            WikiquoteService wikiquoteService) {
+            WikiquoteService wikiquoteService, FactCheckPromptBuilder promptBuilder) {
         this.ollamaClient = ollamaClient;
         this.wikipediaService = wikipediaService;
         this.wikiquoteService = wikiquoteService;
+        this.promptBuilder = promptBuilder;
     }
 
     /**
@@ -117,7 +119,7 @@ public class FactCheckService {
         }
         
         List<String> quotes = wikiquoteService.getQuotes(characterName);
-        String prompt = buildVerificationPrompt(claim, characterContext, wikiContext, quotes);
+        String prompt = promptBuilder.build(claim, characterContext, wikiContext, quotes);
         
         String ollamaResponse = ollamaClient.generate(prompt);
         
@@ -159,45 +161,6 @@ public class FactCheckService {
      * @param wikiContext optional Wikipedia context
      * the prompt string
      */
-    private String buildVerificationPrompt(
-            String claim,
-            String characterContext,
-            WikipediaResponse wikiContext,
-            List<String> quotes) {
-        StringBuilder prompt = new StringBuilder();
-        prompt.append("You are a fact-checker for historical information. ");
-        prompt.append("IMPORTANT: Write the EXPLANATION in the SAME language as the claim (e.g., if claim is in Polish, explain in Polish). Keep VERIFICATION, CONFIDENCE, SOURCE keywords in English.\n\n");
-        
-        if (characterContext != null && !characterContext.isEmpty()) {
-            prompt.append("Character context: ").append(characterContext).append("\n\n");
-        }
-        
-        if (wikiContext != null) {
-            prompt.append("Reference information from Wikipedia:\n");
-            prompt.append("- Title: ").append(wikiContext.title()).append("\n");
-            if (wikiContext.extract() != null) {
-                prompt.append("- Summary: ").append(wikiContext.extract()).append("\n");
-            }
-            prompt.append("\n");
-        }
-
-        if (quotes != null && !quotes.isEmpty()) {
-            prompt.append("Relevant quotes from Wikiquote:\n");
-            for (String quote : quotes) {
-                prompt.append("- ").append(quote).append("\n");
-            }
-            prompt.append("\n");
-        }
-        
-        prompt.append("Claim to verify: ").append(claim).append("\n\n");
-        prompt.append("Provide your answer in the following format:\n");
-        prompt.append("VERIFICATION: [TRUE/FALSE/PARTIAL/UNVERIFIABLE]\n");
-        prompt.append("CONFIDENCE: [0.0-1.0]\n");
-        prompt.append("EXPLANATION: [Brief explanation in the same language as the claim above]\n");
-        prompt.append("SOURCE: [Source name if available]");
-        
-        return prompt.toString();
-    }
 
     /**
      * Parses the Ollama response to extract verification result.

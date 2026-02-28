@@ -4,6 +4,7 @@ import com.historyai.client.OllamaClient;
 import com.historyai.dto.FactCheckResult;
 import com.historyai.dto.WikipediaResponse;
 import com.historyai.service.WikiquoteService;
+import com.historyai.service.FactCheckPromptBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -14,6 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
@@ -28,6 +30,9 @@ class FactCheckServiceTest {
 
     @Mock
     private WikiquoteService wikiquoteService;
+
+    @Mock
+    private FactCheckPromptBuilder promptBuilder;
 
     @InjectMocks
     private FactCheckService factCheckService;
@@ -45,6 +50,7 @@ class FactCheckServiceTest {
                 null
         );
         when(wikiquoteService.getQuotes(anyString())).thenReturn(List.of());
+        when(promptBuilder.build(anyString(), anyString(), any(), any())).thenReturn("prompt");
     }
 
     @Test
