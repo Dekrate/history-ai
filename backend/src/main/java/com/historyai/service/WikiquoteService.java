@@ -115,7 +115,7 @@ public class WikiquoteService {
         cleaned = cleaned.replaceAll("'''(.*?)'''", "$1");
         cleaned = cleaned.replaceAll("''(.*?)''", "$1");
         cleaned = cleaned.replaceAll("\\{\\{[^}]+\\}\\}", "");
-        cleaned = cleaned.replaceAll("\\s+\\*\\*$", "");
+        cleaned = cleaned.replaceAll("\\*\\*$", "");
         return cleaned.trim();
     }
 }
