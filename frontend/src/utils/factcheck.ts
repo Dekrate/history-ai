@@ -18,7 +18,7 @@ export const parseStructuredResult = (text: string): FactCheckResult | null => {
     .replace(/CONFIDENCE:\s*([0-9])\s+([0-9]+)/i, 'CONFIDENCE: $1.$2');
 
   const verificationMatch = normalized.match(/VERIFICATION:\s*([A-Z_]+)/i);
-  const confidenceMatch = normalizedForConfidence.match(/CONFIDENCE:\s*([0-9]*\.?[0-9]+)/i);
+  const confidenceMatch = normalizedForConfidence.match(/CONFIDENCE:\s*([0-9]*[.]?[0-9]+)/i);
   const explanationMatch = normalized.match(/EXPLANATION:\s*([\s\S]*?)(?:\nSOURCE:|$)/i);
   const sourceMatch = normalized.match(/SOURCE:\s*([\s\S]*?)$/i);
 
