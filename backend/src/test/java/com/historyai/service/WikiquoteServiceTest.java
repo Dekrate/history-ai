@@ -36,7 +36,7 @@ class WikiquoteServiceTest {
 
     @Test
     void getQuotes_WhenPlExists_ShouldReturnQuotes() {
-        when(wikiquoteApiClient.getPageExtract("https://pl.wikiquote.org/w/api.php", "Jan Paweł II"))
+        when(wikiquoteApiClient.getPageWikitext("https://pl.wikiquote.org/w/api.php", "Jan Paweł II"))
                 .thenReturn(extract);
 
         List<String> quotes = wikiquoteService.getQuotes("Jan Paweł II");
@@ -47,9 +47,9 @@ class WikiquoteServiceTest {
 
     @Test
     void getQuotes_WhenPlMissing_ShouldFallbackToEn() {
-        when(wikiquoteApiClient.getPageExtract("https://pl.wikiquote.org/w/api.php", "Copernicus"))
+        when(wikiquoteApiClient.getPageWikitext("https://pl.wikiquote.org/w/api.php", "Copernicus"))
                 .thenReturn(null);
-        when(wikiquoteApiClient.getPageExtract("https://en.wikiquote.org/w/api.php", "Copernicus"))
+        when(wikiquoteApiClient.getPageWikitext("https://en.wikiquote.org/w/api.php", "Copernicus"))
                 .thenReturn("* Quote.");
 
         List<String> quotes = wikiquoteService.getQuotes("Copernicus");
@@ -60,13 +60,30 @@ class WikiquoteServiceTest {
 
     @Test
     void getQuotes_WhenNoQuotes_ShouldReturnEmpty() {
-        when(wikiquoteApiClient.getPageExtract("https://pl.wikiquote.org/w/api.php", "Unknown"))
+        when(wikiquoteApiClient.getPageWikitext("https://pl.wikiquote.org/w/api.php", "Unknown"))
                 .thenReturn("Brak cytatów.");
-        when(wikiquoteApiClient.getPageExtract("https://en.wikiquote.org/w/api.php", "Unknown"))
+        when(wikiquoteApiClient.getPageWikitext("https://en.wikiquote.org/w/api.php", "Unknown"))
                 .thenReturn(null);
 
         List<String> quotes = wikiquoteService.getQuotes("Unknown");
 
         assertTrue(quotes.isEmpty());
+    }
+
+    @Test
+    void getQuotes_ShouldSkipMetadataLines() {
+        String wikitext = """
+            * Pierwszy cytat.
+            * Opis: wyjaśnienie.
+            * Źródło: książka.
+            * Zobacz też: inne.
+            """;
+        when(wikiquoteApiClient.getPageWikitext("https://pl.wikiquote.org/w/api.php", "Test"))
+                .thenReturn(wikitext);
+
+        List<String> quotes = wikiquoteService.getQuotes("Test");
+
+        assertEquals(1, quotes.size());
+        assertEquals("Pierwszy cytat.", quotes.get(0));
     }
 }

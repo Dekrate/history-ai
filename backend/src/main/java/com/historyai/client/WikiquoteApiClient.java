@@ -69,4 +69,26 @@ public class WikiquoteApiClient {
             throw new WikipediaApiException("Failed to fetch Wikiquote data", e);
         }
     }
+
+    public String getPageWikitext(String baseUrl, String title) {
+        String requestBase = baseUrl == null || baseUrl.isBlank() ? defaultBaseUrl : baseUrl;
+        String url = requestBase
+                + "?action=parse&prop=wikitext&format=json&formatversion=2&redirects=1&page={title}";
+        try {
+            String response = restTemplate.getForObject(url, String.class, title.replace(" ", "_"));
+            if (response == null) {
+                return null;
+            }
+            JsonNode root = objectMapper.readTree(response);
+            JsonNode parse = root.path("parse");
+            if (parse.isMissingNode()) {
+                return null;
+            }
+            String wikitext = parse.path("wikitext").asText(null);
+            return wikitext == null || wikitext.isBlank() ? null : wikitext;
+        } catch (Exception e) {
+            LOG.error("Error fetching Wikiquote wikitext for {}: {}", title, e.getMessage());
+            throw new WikipediaApiException("Failed to fetch Wikiquote data", e);
+        }
+    }
 }

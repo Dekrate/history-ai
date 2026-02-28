@@ -35,6 +35,17 @@ public class WikiquoteService {
         if (characterName == null || characterName.isBlank()) {
             return Collections.emptyList();
         }
+        String wikitext = wikiquoteApiClient.getPageWikitext(WIKIQUOTE_PL_BASE_URL, characterName);
+        if (wikitext == null) {
+            wikitext = wikiquoteApiClient.getPageWikitext(WIKIQUOTE_EN_BASE_URL, characterName);
+        }
+        if (wikitext != null) {
+            List<String> quotes = extractQuotes(wikitext);
+            if (!quotes.isEmpty()) {
+                return quotes;
+            }
+        }
+
         String extract = wikiquoteApiClient.getPageExtract(WIKIQUOTE_PL_BASE_URL, characterName);
         if (extract == null) {
             extract = wikiquoteApiClient.getPageExtract(WIKIQUOTE_EN_BASE_URL, characterName);
@@ -62,7 +73,7 @@ public class WikiquoteService {
             }
             if (trimmed.startsWith("*") || trimmed.startsWith("•") || trimmed.startsWith("-")) {
                 String cleaned = cleanedBullet(trimmed);
-                if (!cleaned.isBlank()) {
+                if (!cleaned.isBlank() && isQuoteLine(cleaned)) {
                     quotes.add(cleaned);
                 }
             }
@@ -77,5 +88,12 @@ public class WikiquoteService {
         String cleaned = trimmed.replaceFirst("^[*•-]+\\s*", "");
         cleaned = cleaned.replaceAll("\\s+", " ");
         return cleaned;
+    }
+
+    private boolean isQuoteLine(String line) {
+        String lower = line.toLowerCase(Locale.ROOT);
+        return !(lower.startsWith("opis:") || lower.startsWith("źródło:")
+                || lower.startsWith("zrodlo:") || lower.startsWith("autor:")
+                || lower.startsWith("zobacz też") || lower.startsWith("zobacz tez"));
     }
 }
