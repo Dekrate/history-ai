@@ -10,7 +10,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 @EnableCaching
 public class HistoryAiApplication {
     
-    static void main(String[] args) {
+    public static void main(String[] args) {
         SpringApplication.run(HistoryAiApplication.class, args);
     }
 }
