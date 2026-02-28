@@ -86,4 +86,22 @@ class WikiquoteServiceTest {
         assertEquals(1, quotes.size());
         assertEquals("Pierwszy cytat.", quotes.get(0));
     }
+
+    @Test
+    void getQuotes_ShouldCleanWikiLinksAndMarkup() {
+        String wikitext = """
+            * If the [[Europe|European]] heritage is denied, the future of [[Europe]] is compromised.**
+            * '''Bold''' and ''italic'' with [[link]].
+            * Quote with <ref>source</ref> reference.
+            """;
+        when(wikiquoteApiClient.getPageWikitext("https://pl.wikiquote.org/w/api.php", "Markup"))
+                .thenReturn(wikitext);
+
+        List<String> quotes = wikiquoteService.getQuotes("Markup");
+
+        assertEquals(3, quotes.size());
+        assertEquals("If the European heritage is denied, the future of Europe is compromised.", quotes.get(0));
+        assertEquals("Bold and italic with link.", quotes.get(1));
+        assertEquals("Quote with reference.", quotes.get(2));
+    }
 }

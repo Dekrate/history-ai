@@ -32,12 +32,20 @@ public class WikiquoteService {
 
     @Cacheable(value = "wikiquote", key = "#characterName", unless = "#result == null")
     public List<String> getQuotes(String characterName) {
+        return getQuotes(characterName, "pl");
+    }
+
+    public List<String> getQuotes(String characterName, String lang) {
         if (characterName == null || characterName.isBlank()) {
             return Collections.emptyList();
         }
-        String wikitext = wikiquoteApiClient.getPageWikitext(WIKIQUOTE_PL_BASE_URL, characterName);
+        boolean preferEnglish = lang != null && lang.equalsIgnoreCase("en");
+        String primary = preferEnglish ? WIKIQUOTE_EN_BASE_URL : WIKIQUOTE_PL_BASE_URL;
+        String fallback = preferEnglish ? WIKIQUOTE_PL_BASE_URL : WIKIQUOTE_EN_BASE_URL;
+
+        String wikitext = wikiquoteApiClient.getPageWikitext(primary, characterName);
         if (wikitext == null) {
-            wikitext = wikiquoteApiClient.getPageWikitext(WIKIQUOTE_EN_BASE_URL, characterName);
+            wikitext = wikiquoteApiClient.getPageWikitext(fallback, characterName);
         }
         if (wikitext != null) {
             List<String> quotes = extractQuotes(wikitext);
@@ -46,9 +54,9 @@ public class WikiquoteService {
             }
         }
 
-        String extract = wikiquoteApiClient.getPageExtract(WIKIQUOTE_PL_BASE_URL, characterName);
+        String extract = wikiquoteApiClient.getPageExtract(primary, characterName);
         if (extract == null) {
-            extract = wikiquoteApiClient.getPageExtract(WIKIQUOTE_EN_BASE_URL, characterName);
+            extract = wikiquoteApiClient.getPageExtract(fallback, characterName);
         }
         if (extract == null) {
             return Collections.emptyList();
@@ -86,6 +94,7 @@ public class WikiquoteService {
 
     private String cleanedBullet(String trimmed) {
         String cleaned = trimmed.replaceFirst("^[*•-]+\\s*", "");
+        cleaned = cleanWikiMarkup(cleaned);
         cleaned = cleaned.replaceAll("\\s+", " ");
         return cleaned;
     }
@@ -95,5 +104,18 @@ public class WikiquoteService {
         return !(lower.startsWith("opis:") || lower.startsWith("źródło:")
                 || lower.startsWith("zrodlo:") || lower.startsWith("autor:")
                 || lower.startsWith("zobacz też") || lower.startsWith("zobacz tez"));
+    }
+
+    private String cleanWikiMarkup(String text) {
+        String cleaned = text;
+        cleaned = cleaned.replaceAll("<ref[^>]*>.*?</ref>", "");
+        cleaned = cleaned.replaceAll("\\[\\[([^\\]|]+)\\|([^\\]]+)\\]\\]", "$2");
+        cleaned = cleaned.replaceAll("\\[\\[([^\\]]+)\\]\\]", "$1");
+        cleaned = cleaned.replaceAll("'''''(.*?)'''''", "$1");
+        cleaned = cleaned.replaceAll("'''(.*?)'''", "$1");
+        cleaned = cleaned.replaceAll("''(.*?)''", "$1");
+        cleaned = cleaned.replaceAll("\\{\\{[^}]+\\}\\}", "");
+        cleaned = cleaned.replaceAll("\\s+\\*\\*$", "");
+        return cleaned.trim();
     }
 }
