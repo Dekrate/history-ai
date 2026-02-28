@@ -102,12 +102,7 @@ public class WikidataApiClient {
             if (!claims.isArray() || claims.isEmpty()) {
                 return java.util.Optional.empty();
             }
-            JsonNode first = claims.get(0);
-            String countryId = first.path("mainsnak")
-                    .path("datavalue")
-                    .path("value")
-                    .path("id")
-                    .asText(null);
+            String countryId = selectBestClaimEntityId(claims);
             if (countryId == null || countryId.isBlank()) {
                 return java.util.Optional.empty();
             }
@@ -116,6 +111,32 @@ public class WikidataApiClient {
             LOG.error("Error fetching Wikidata citizenship for {}: {}", wikibaseItem, e.getMessage());
             throw new WikipediaApiException("Failed to fetch Wikidata data", e);
         }
+    }
+
+    String selectBestClaimEntityId(JsonNode claims) {
+        String normal = null;
+        String fallback = null;
+        for (JsonNode claim : claims) {
+            String entityId = claim.path("mainsnak")
+                    .path("datavalue")
+                    .path("value")
+                    .path("id")
+                    .asText(null);
+            if (entityId == null || entityId.isBlank()) {
+                continue;
+            }
+            String rank = claim.path("rank").asText("normal");
+            if ("preferred".equalsIgnoreCase(rank)) {
+                return entityId;
+            }
+            if ("normal".equalsIgnoreCase(rank) && normal == null) {
+                normal = entityId;
+            }
+            if (fallback == null) {
+                fallback = entityId;
+            }
+        }
+        return normal != null ? normal : fallback;
     }
 
     private java.util.Optional<String> getEntityLabel(String entityId, String preferredLang, String fallbackLang) {

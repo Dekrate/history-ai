@@ -218,8 +218,27 @@ export function Chat() {
 
       eventSource.addEventListener('final', (event) => {
         const data = (event as MessageEvent).data;
-        currentContent = data;
-        completeStream();
+        try {
+          const parsedResult = JSON.parse(data) as FactCheckResult;
+          currentContent = parsedResult.explanation || '';
+          eventSource.close();
+          setIsVerifying(false);
+          setVerifications(prev =>
+            prev.map(v =>
+              v.id === messageId
+                ? {
+                    ...v,
+                    isStreaming: false,
+                    results: [parsedResult],
+                  }
+                : v
+            )
+          );
+          finalized = true;
+        } catch (error) {
+          currentContent = data;
+          completeStream();
+        }
       });
 
       eventSource.addEventListener('complete', () => {

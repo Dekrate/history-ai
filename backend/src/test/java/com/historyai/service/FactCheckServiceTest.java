@@ -118,4 +118,16 @@ class FactCheckServiceTest {
 
         assertEquals(FactCheckResult.VerificationResult.UNVERIFIABLE, result.getVerification());
     }
+
+    @Test
+    void parseOllamaResponseForStreaming_WithSpacedConfidence_ShouldParse() {
+        FactCheckResult result = factCheckService.parseOllamaResponseForStreaming(
+                "Test claim",
+                "VERIFICATION: TRUE\nCONFIDENCE: 0. 95\nEXPLANATION: OK",
+                wikiResponse
+        );
+
+        assertEquals(FactCheckResult.VerificationResult.VERIFIED, result.getVerification());
+        assertEquals(0.95f, result.getConfidence());
+    }
 }

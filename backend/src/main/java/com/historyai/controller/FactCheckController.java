@@ -7,6 +7,7 @@ import com.historyai.dto.WikipediaResponse;
 import com.historyai.exception.CharacterNotFoundInWikipediaException;
 import com.historyai.service.FactCheckService;
 import com.historyai.service.WikipediaService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -33,6 +34,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 public class FactCheckController {
 
     private static final Logger LOG = LoggerFactory.getLogger(FactCheckController.class);
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private final FactCheckService factCheckService;
     private final OllamaClient ollamaClient;
@@ -113,7 +115,10 @@ public class FactCheckController {
                 }
             }
 
-            emitter.send(SseEmitter.event().name("final").data(fullResponse.toString()));
+            FactCheckResult parsed = factCheckService.parseOllamaResponseForStreaming(
+                    message, fullResponse.toString(), wikiContext);
+            String finalJson = OBJECT_MAPPER.writeValueAsString(parsed);
+            emitter.send(SseEmitter.event().name("final").data(finalJson));
             emitter.send(SseEmitter.event().name("complete").data("Verification complete"));
             emitter.complete();
             

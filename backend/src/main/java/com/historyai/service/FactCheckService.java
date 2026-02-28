@@ -42,36 +42,21 @@ public class FactCheckService {
      * @param characterContext optional context about the historical character
      * @return list of fact-check results for each claim
      */
-    public List<FactCheckResult> factCheck(String message, String characterContext) {
+    public List<FactCheckResult> factCheck(String message, String characterName, String characterContext) {
         LOG.info("Starting fact-check for message");
-        
-        List<String> claims = extractClaims(message);
-        LOG.debug("Extracted {} claims from message", claims.size());
         
         List<FactCheckResult> results = new ArrayList<>();
         
-        for (String claim : claims) {
-            try {
-                FactCheckResult result = verifyClaim(claim, characterContext);
-                results.add(result);
-            } catch (Exception e) {
-                LOG.error("Error verifying claim: {}", claim, e);
-                results.add(new FactCheckResult(
-                        claim,
-                        FactCheckResult.VerificationResult.UNVERIFIABLE,
-                        null,
-                        "Error during verification: " + e.getMessage(),
-                        0.0f
-                ));
-            }
-        }
-        
-        if (results.isEmpty()) {
+        try {
+            FactCheckResult result = verifyClaim(message, characterName, characterContext);
+            results.add(result);
+        } catch (Exception e) {
+            LOG.error("Error verifying message: {}", message, e);
             results.add(new FactCheckResult(
                     message,
                     FactCheckResult.VerificationResult.UNVERIFIABLE,
                     null,
-                    "No factual claims detected in message",
+                    "Error during verification: " + e.getMessage(),
                     0.0f
             ));
         }
@@ -113,29 +98,18 @@ public class FactCheckService {
      * @param characterContext optional context about the historical character
      * @return the verification result
      */
-    public FactCheckResult verifyClaim(String claim, String characterContext) {
+    public FactCheckResult verifyClaim(String claim, String characterName, String characterContext) {
         LOG.debug("Verifying claim: {}", claim);
         
         WikipediaResponse wikiContext = null;
         
-        // First try characterContext if available
-        if (characterContext != null && !characterContext.isBlank()) {
+        // Use characterName for Wikipedia lookup
+        if (characterName != null && !characterName.isBlank()) {
             try {
-                wikiContext = wikipediaService.getCharacterInfo(characterContext);
-                LOG.debug("Found Wikipedia context for character: {}", characterContext);
+                wikiContext = wikipediaService.getCharacterInfo(characterName);
+                LOG.debug("Found Wikipedia context for character: {}", characterName);
             } catch (Exception e) {
-                LOG.warn("Could not fetch Wikipedia context for character: {}", characterContext);
-            }
-        }
-        
-        // Fallback to extracted keywords from claim
-        if (wikiContext == null) {
-            String keywords = extractFirstNameLastName(claim);
-            try {
-                wikiContext = wikipediaService.getCharacterInfo(keywords);
-                LOG.debug("Found Wikipedia context for keywords: {}", keywords);
-            } catch (Exception e) {
-                LOG.warn("Could not fetch Wikipedia context for keywords: {}", keywords);
+                LOG.warn("Could not fetch Wikipedia context for: {}", characterName);
             }
         }
         
@@ -143,6 +117,19 @@ public class FactCheckService {
         
         String ollamaResponse = ollamaClient.generate(prompt);
         
+        return parseOllamaResponse(claim, ollamaResponse, wikiContext);
+    }
+
+    /**
+     * Parses a raw Ollama response for streaming scenarios.
+     *
+     * @param claim the original claim
+     * @param ollamaResponse the response from Ollama
+     * @param wikiContext the Wikipedia context used
+     * @return the parsed FactCheckResult
+     */
+    public FactCheckResult parseOllamaResponseForStreaming(
+            String claim, String ollamaResponse, WikipediaResponse wikiContext) {
         return parseOllamaResponse(claim, ollamaResponse, wikiContext);
     }
 
@@ -171,7 +158,7 @@ public class FactCheckService {
     private String buildVerificationPrompt(String claim, String characterContext, WikipediaResponse wikiContext) {
         StringBuilder prompt = new StringBuilder();
         prompt.append("You are a fact-checker for historical information. ");
-        prompt.append("Analyze the following claim and determine if it is factually correct.\n\n");
+        prompt.append("IMPORTANT: Write the EXPLANATION in the SAME language as the claim (e.g., if claim is in Polish, explain in Polish). Keep VERIFICATION, CONFIDENCE, SOURCE keywords in English.\n\n");
         
         if (characterContext != null && !characterContext.isEmpty()) {
             prompt.append("Character context: ").append(characterContext).append("\n\n");
@@ -190,7 +177,7 @@ public class FactCheckService {
         prompt.append("Provide your answer in the following format:\n");
         prompt.append("VERIFICATION: [TRUE/FALSE/PARTIAL/UNVERIFIABLE]\n");
         prompt.append("CONFIDENCE: [0.0-1.0]\n");
-        prompt.append("EXPLANATION: [Brief explanation of your reasoning]\n");
+        prompt.append("EXPLANATION: [Brief explanation in the same language as the claim above]\n");
         prompt.append("SOURCE: [Source name if available]");
         
         return prompt.toString();
@@ -215,22 +202,27 @@ public class FactCheckService {
         Matcher verificationMatcher = verificationPattern.matcher(ollamaResponse);
         if (verificationMatcher.find()) {
             String result = verificationMatcher.group(1).toUpperCase();
-            if ("TRUE".equals(result) || "PRAWDA".equals(result)) {
+            if ("TRUE".equals(result) || "PRAWDA".equals(result) || "VERIFIED".equals(result)) {
                 verification = FactCheckResult.VerificationResult.VERIFIED;
             } else if ("FALSE".equals(result) || "FAŁSZ".equals(result)) {
                 verification = FactCheckResult.VerificationResult.FALSE;
             } else if ("PARTIAL".equals(result) || "CZEŚCIOWO".equals(result)) {
                 verification = FactCheckResult.VerificationResult.PARTIAL;
+            } else if ("UNVERIFIABLE".equals(result) || "NIEZWERYFIKOWALNE".equals(result)) {
+                verification = FactCheckResult.VerificationResult.UNVERIFIABLE;
             }
         }
         
         LOG.debug("Parsed verification: {}", verification);
         
-        Pattern confidencePattern = Pattern.compile("CONFIDENCE:\\s*([0-9.]+)", Pattern.CASE_INSENSITIVE);
+        Pattern confidencePattern = Pattern.compile("CONFIDENCE:\\s*([0-9]+(?:[\\s.,]+[0-9]+)?)", Pattern.CASE_INSENSITIVE);
         Matcher matcher = confidencePattern.matcher(ollamaResponse);
         if (matcher.find()) {
             try {
-                confidence = Float.parseFloat(matcher.group(1));
+                String normalized = matcher.group(1)
+                        .replace(" ", "")
+                        .replace(",", ".");
+                confidence = Float.parseFloat(normalized);
                 confidence = Math.max(0.0f, Math.min(1.0f, confidence));
                 LOG.debug("Parsed confidence (clamped): {}", confidence);
             } catch (NumberFormatException e) {
