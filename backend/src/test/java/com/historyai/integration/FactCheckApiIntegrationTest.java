@@ -49,17 +49,17 @@ class FactCheckApiIntegrationTest {
     }
 
     @Test
-    void factCheck_WithEmptyMessage_ShouldReturn200() {
+    void factCheck_WithEmptyMessage_ShouldReturn400() {
         String url = "http://localhost:" + port + "/api/factcheck";
         
         FactCheckRequest request = new FactCheckRequest("", "Test");
         
         HttpEntity<FactCheckRequest> httpRequest = new HttpEntity<>(request);
         
-        ResponseEntity<FactCheckResult[]> response = restTemplate.postForEntity(
-                url, httpRequest, FactCheckResult[].class);
+        ResponseEntity<String> response = restTemplate.postForEntity(
+                url, httpRequest, String.class);
         
-        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
     }
 
     @Test

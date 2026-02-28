@@ -92,7 +92,7 @@ public class FactCheckService {
         String[] sentences = message.split("[.!?]+");
         
         Pattern factualPattern = Pattern.compile(
-                "(\\d{3,4}|urodzony|zmarl|prezydent|krol|wojna|bitwa|odkrycie|wynalazek|nagroda)",
+                "(\\d{3,4}|urodzony|zmarl|zmarł|krol|król|prezydent|wojna|bitwa|odkrycie|wynalazek|nagroda|urodzony|uros)",
                 Pattern.CASE_INSENSITIVE
         );
         
@@ -211,7 +211,7 @@ public class FactCheckService {
         float confidence = 0.5f;
         String explanation = "";
         
-        Pattern verificationPattern = Pattern.compile("^VERIFICATION:\\s*(\\w+)", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE);
+        Pattern verificationPattern = Pattern.compile("^VERIFICATION:\\s*([\\p{L}]+)", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE);
         Matcher verificationMatcher = verificationPattern.matcher(ollamaResponse);
         if (verificationMatcher.find()) {
             String result = verificationMatcher.group(1).toUpperCase();
@@ -226,12 +226,13 @@ public class FactCheckService {
         
         LOG.debug("Parsed verification: {}", verification);
         
-        Pattern confidencePattern = Pattern.compile("CONFIDENCE:\\s*([0-9.]+)");
+        Pattern confidencePattern = Pattern.compile("CONFIDENCE:\\s*([0-9.]+)", Pattern.CASE_INSENSITIVE);
         Matcher matcher = confidencePattern.matcher(ollamaResponse);
         if (matcher.find()) {
             try {
                 confidence = Float.parseFloat(matcher.group(1));
-                LOG.debug("Parsed confidence: {}", confidence);
+                confidence = Math.max(0.0f, Math.min(1.0f, confidence));
+                LOG.debug("Parsed confidence (clamped): {}", confidence);
             } catch (NumberFormatException e) {
                 LOG.warn("Could not parse confidence value");
             }
