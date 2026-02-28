@@ -12,14 +12,18 @@ public class FactCheckRequest {
     @NotBlank
     private String message;
     
+    /** Name of the historical character for Wikipedia lookup */
+    private String characterName;
+    
     /** Optional context about the historical character */
     private String characterContext;
 
     public FactCheckRequest() {
     }
 
-    public FactCheckRequest(String message, String characterContext) {
+    public FactCheckRequest(String message, String characterName, String characterContext) {
         this.message = message;
+        this.characterName = characterName;
         this.characterContext = characterContext;
     }
 
@@ -29,6 +33,14 @@ public class FactCheckRequest {
 
     public void setMessage(String message) {
         this.message = message;
+    }
+
+    public String getCharacterName() {
+        return characterName;
+    }
+
+    public void setCharacterName(String characterName) {
+        this.characterName = characterName;
     }
 
     public String getCharacterContext() {

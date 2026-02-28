@@ -62,8 +62,6 @@ class WikiquoteServiceTest {
     void getQuotes_WhenNoQuotes_ShouldReturnEmpty() {
         when(wikiquoteApiClient.getPageWikitext("https://pl.wikiquote.org/w/api.php", "Unknown"))
                 .thenReturn("Brak cytatów.");
-        when(wikiquoteApiClient.getPageWikitext("https://en.wikiquote.org/w/api.php", "Unknown"))
-                .thenReturn(null);
 
         List<String> quotes = wikiquoteService.getQuotes("Unknown");
 
