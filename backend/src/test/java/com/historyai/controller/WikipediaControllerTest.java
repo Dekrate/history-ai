@@ -33,6 +33,7 @@ class WikipediaControllerTest {
                 "Mikołaj Kopernik",
                 "Polish astronomer",
                 "Renaissance astronomer",
+                "Q123",
                 null,
                 null
         );

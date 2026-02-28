@@ -27,6 +27,9 @@ class CharacterServiceTest {
     @Mock
     private HistoricalCharacterRepository repository;
 
+    @Mock
+    private WikipediaService wikipediaService;
+
     @InjectMocks
     private CharacterService characterService;
 
@@ -198,5 +201,27 @@ class CharacterServiceTest {
 
         assertThrows(IllegalArgumentException.class, () -> 
             characterService.update(testCharacter.getId(), testDTO));
+    }
+
+    @Test
+    void searchAndImportFromWikipedia_WhenWikidataNationalityAvailable_ShouldUseIt() {
+        when(repository.existsByName("Jan Paweł II")).thenReturn(false);
+        when(wikipediaService.getCharacterInfo("Jan Paweł II"))
+                .thenReturn(new com.historyai.dto.WikipediaResponse(
+                        "Jan Paweł II",
+                        "Polski duchowny",
+                        "Papież",
+                        "Q123",
+                        null,
+                        null
+                ));
+        when(wikipediaService.getNationalityFromWikidata("Q123")).thenReturn("Polska");
+
+        when(repository.save(any(HistoricalCharacter.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        HistoricalCharacterDTO result = characterService.searchAndImportFromWikipedia("Jan Paweł II");
+
+        assertEquals("Polska", result.getNationality());
+        verify(wikipediaService, times(1)).getNationalityFromWikidata("Q123");
     }
 }

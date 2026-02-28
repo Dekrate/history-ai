@@ -2,7 +2,13 @@ package com.historyai.client;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.time.Duration;
+import java.util.function.Consumer;
+import java.nio.charset.StandardCharsets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,10 +35,6 @@ public class OllamaClient {
 
     /**
      * Constructs a new OllamaClient with the specified base URL and REST template builder.
-     *
-     * @param baseUrl the base URL of the Ollama API
-     * @param defaultModel the default model name from configuration
-     * @param restTemplateBuilder the REST template builder for configuring timeouts
      */
     public OllamaClient(
             @Value("${spring.ai.ollama.base-url:http://localhost:11434}") String baseUrl,
@@ -47,12 +49,12 @@ public class OllamaClient {
                 .build();
     }
 
+    public String getDefaultModel() {
+        return defaultModel;
+    }
+
     /**
-     * Generates a response from the Ollama model using the default model from configuration.
-     *
-     * @param prompt the prompt to send to the model
-     * @return the generated response text
-     * @throws OllamaApiException if the API call fails
+     * Generates a response from the Ollama model using the default model.
      */
     public String generate(String prompt) {
         return generate(defaultModel, prompt);
@@ -60,11 +62,6 @@ public class OllamaClient {
 
     /**
      * Generates a response from the Ollama model using the provided prompt.
-     *
-     * @param model the model name to use
-     * @param prompt the prompt to send to the model
-     * @return the generated response text
-     * @throws OllamaApiException if the API call fails
      */
     public String generate(String model, String prompt) {
         LOG.debug("Generating response with model: {}", model);
@@ -98,11 +95,59 @@ public class OllamaClient {
     }
 
     /**
-     * Parses JSON response to extract the response text.
-     *
-     * @param json the JSON response string
-     * @return the extracted response text
+     * Generates a streaming response from the Ollama model.
      */
+    public void generateStream(String model, String prompt, Consumer<String> consumer) {
+        LOG.debug("Generating streaming response with model: {}", model);
+
+        try {
+            URL url = new URL(baseUrl + "/api/generate");
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("POST");
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setDoOutput(true);
+            conn.setConnectTimeout(30000);
+            conn.setReadTimeout(120000);
+
+            String requestBody = String.format(
+                    "{\"model\": \"%s\", \"prompt\": \"%s\", \"stream\": true}",
+                    model,
+                    escapeJson(prompt)
+            );
+
+            conn.getOutputStream().write(requestBody.getBytes(StandardCharsets.UTF_8));
+            conn.getOutputStream().flush();
+
+            BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8));
+            String line;
+            StringBuilder fullResponse = new StringBuilder();
+
+            while ((line = reader.readLine()) != null) {
+                if (line.trim().isEmpty()) continue;
+                try {
+                    JsonNode node = objectMapper.readTree(line);
+                    JsonNode responseNode = node.get("response");
+                    if (responseNode != null) {
+                        String text = responseNode.asText();
+                        consumer.accept(text);
+                        fullResponse.append(text);
+                    }
+                    if (node.has("done") && node.get("done").asBoolean()) {
+                        break;
+                    }
+                } catch (Exception e) {
+                    LOG.debug("Error parsing line: {}", line);
+                }
+            }
+            reader.close();
+            conn.disconnect();
+
+        } catch (Exception e) {
+            LOG.error("Error calling Ollama streaming: {}", e.getMessage());
+            throw new OllamaApiException("Failed to generate streaming response from Ollama", e);
+        }
+    }
+
     private String parseNdjsonResponse(String json) {
         try {
             JsonNode root = objectMapper.readTree(json);
@@ -116,9 +161,6 @@ public class OllamaClient {
         return "";
     }
 
-    /**
-     * Escapes special characters for JSON string.
-     */
     private String escapeJson(String s) {
         return s.replace("\\", "\\\\")
                 .replace("\"", "\\\"")
@@ -127,20 +169,6 @@ public class OllamaClient {
                 .replace("\t", "\\t");
     }
 
-    /**
-     * Unescapes special characters in JSON string.
-     */
-    private String unescapeJson(String s) {
-        return s.replace("\\n", "\n")
-                .replace("\\r", "\r")
-                .replace("\\t", "\t")
-                .replace("\\\"", "\"")
-                .replace("\\\\", "\\");
-    }
-    
-    /**
-     * Exception thrown when Ollama API call fails.
-     */
     public static class OllamaApiException extends RuntimeException {
         public OllamaApiException(String message, Throwable cause) {
             super(message, cause);

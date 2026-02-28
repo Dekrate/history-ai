@@ -36,6 +36,7 @@ class FactCheckServiceTest {
                 "Nicolaus Copernicus",
                 "Polish astronomer",
                 "Renaissance mathematician",
+                "Q123",
                 null,
                 null
         );
@@ -50,7 +51,8 @@ class FactCheckServiceTest {
 
         List<FactCheckResult> results = factCheckService.factCheck(
                 "Mikołaj Kopernik urodził się w 1473 roku.",
-                "Mikołaj Kopernik"
+                "Mikołaj Kopernik",
+                "Polish astronomer"
         );
 
         assertEquals(1, results.size());
@@ -67,7 +69,8 @@ class FactCheckServiceTest {
 
         List<FactCheckResult> results = factCheckService.factCheck(
                 "Kopernik urodził się w 1500 roku.",
-                "Mikołaj Kopernik"
+                "Mikołaj Kopernik",
+                "Polish astronomer"
         );
 
         assertEquals(1, results.size());
@@ -83,7 +86,8 @@ class FactCheckServiceTest {
 
         FactCheckResult result = factCheckService.verifyClaim(
                 "Test claim.",
-                "Test"
+                "Test",
+                "Test context"
         );
 
         assertEquals(FactCheckResult.VerificationResult.VERIFIED, result.getVerification());
@@ -98,7 +102,7 @@ class FactCheckServiceTest {
         when(ollamaClient.generate(anyString()))
                 .thenReturn("VERIFICATION: FALSE\nCONFIDENCE: 0.8\nEXPLANATION: Wrong info.");
 
-        FactCheckResult result = factCheckService.verifyClaim("Test.", "Test");
+        FactCheckResult result = factCheckService.verifyClaim("Test.", "Test", "Test context");
 
         assertEquals(FactCheckResult.VerificationResult.FALSE, result.getVerification());
     }
@@ -110,7 +114,7 @@ class FactCheckServiceTest {
         when(ollamaClient.generate(anyString()))
                 .thenReturn("Some random response without verification keyword.");
 
-        FactCheckResult result = factCheckService.verifyClaim("Test.", "Test");
+        FactCheckResult result = factCheckService.verifyClaim("Test.", "Test", "Test context");
 
         assertEquals(FactCheckResult.VerificationResult.UNVERIFIABLE, result.getVerification());
     }
