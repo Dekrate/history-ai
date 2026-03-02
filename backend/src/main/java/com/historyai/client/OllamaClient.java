@@ -8,10 +8,12 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
+import java.net.SocketTimeoutException;
 import java.net.URL;
+import java.net.http.HttpTimeoutException;
 import java.time.Duration;
-import java.util.function.Consumer;
 import java.nio.charset.StandardCharsets;
+import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,6 +22,7 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 
 /**
@@ -35,6 +38,8 @@ public class OllamaClient {
     private final ObjectMapper objectMapper;
     private final String baseUrl;
     private final String defaultModel;
+    private final int connectTimeoutMillis;
+    private final int readTimeoutMillis;
 
     /**
      * Constructs a new OllamaClient with the specified base URL and REST template builder.
@@ -42,13 +47,17 @@ public class OllamaClient {
     public OllamaClient(
             @Value("${spring.ai.ollama.base-url:http://localhost:11434}") String baseUrl,
             @Value("${spring.ai.ollama.chat.options.model:SpeakLeash/bielik-11b-v3.0-instruct:bf16}") String defaultModel,
+            @Value("${app.ai.ollama.connect-timeout-seconds:30}") int connectTimeoutSeconds,
+            @Value("${app.ai.ollama.read-timeout-seconds:240}") int readTimeoutSeconds,
             RestTemplateBuilder restTemplateBuilder) {
         this.baseUrl = baseUrl;
         this.defaultModel = defaultModel;
         this.objectMapper = new ObjectMapper();
+        this.connectTimeoutMillis = Math.max(1, connectTimeoutSeconds) * 1000;
+        this.readTimeoutMillis = Math.max(1, readTimeoutSeconds) * 1000;
         this.restTemplate = restTemplateBuilder
-                .connectTimeout(Duration.ofSeconds(30))
-                .readTimeout(Duration.ofSeconds(120))
+                .connectTimeout(Duration.ofMillis(connectTimeoutMillis))
+                .readTimeout(Duration.ofMillis(readTimeoutMillis))
                 .build();
     }
 
@@ -93,6 +102,9 @@ public class OllamaClient {
             return "";
         } catch (Exception e) {
             LOG.error("Error calling Ollama: {}", e.getMessage());
+            if (isTimeoutError(e)) {
+                throw new OllamaTimeoutException("Ollama request timed out", e);
+            }
             throw new OllamaApiException("Failed to generate response from Ollama", e);
         }
     }
@@ -110,8 +122,8 @@ public class OllamaClient {
             conn.setRequestMethod("POST");
             conn.setRequestProperty("Content-Type", "application/json");
             conn.setDoOutput(true);
-            conn.setConnectTimeout(30000);
-            conn.setReadTimeout(120000);
+            conn.setConnectTimeout(connectTimeoutMillis);
+            conn.setReadTimeout(readTimeoutMillis);
 
             String requestBody = String.format(
                     "{\"model\": \"%s\", \"prompt\": \"%s\", \"stream\": true}",
@@ -160,6 +172,9 @@ public class OllamaClient {
             }
         } catch (Exception e) {
             LOG.error("Error calling Ollama streaming: {}", e.getMessage());
+            if (isTimeoutError(e)) {
+                throw new OllamaTimeoutException("Ollama streaming request timed out", e);
+            }
             throw new OllamaApiException("Failed to generate streaming response from Ollama", e);
         } finally {
             if (conn != null) {
@@ -201,8 +216,31 @@ public class OllamaClient {
                 .replace("\t", "\\t");
     }
 
+    private boolean isTimeoutError(Throwable throwable) {
+        Throwable current = throwable;
+        while (current != null) {
+            if (current instanceof HttpTimeoutException
+                    || current instanceof SocketTimeoutException) {
+                return true;
+            }
+            if (current instanceof ResourceAccessException
+                    && current.getMessage() != null
+                    && current.getMessage().toLowerCase().contains("timed out")) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
+    }
+
     public static class OllamaApiException extends RuntimeException {
         public OllamaApiException(String message, Throwable cause) {
+            super(message, cause);
+        }
+    }
+
+    public static class OllamaTimeoutException extends OllamaApiException {
+        public OllamaTimeoutException(String message, Throwable cause) {
             super(message, cause);
         }
     }

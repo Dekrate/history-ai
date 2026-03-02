@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import axios from 'axios';
 import { ArrowLeft, Send, Shield, Loader2, CheckCircle, XCircle, HelpCircle, MessageCircle, Bot, ChevronUp, ChevronDown } from 'lucide-react';
 import { characterApi } from '../services/api';
 import { formatStreamText, parseFinalEvent, parseStructuredResult } from '../utils/factcheck';
@@ -11,6 +12,7 @@ interface Message {
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
+  isStreaming?: boolean;
 }
 
 interface VerificationMessage {
@@ -28,10 +30,12 @@ export function Chat() {
   const { characterId } = useParams<{ characterId: string }>();
   const [chatMessages, setChatMessages] = useState<Message[]>([]);
   const [chatInput, setChatInput] = useState('');
+  const [chatConversationId, setChatConversationId] = useState<string | undefined>(undefined);
+  const [isChatLoading, setIsChatLoading] = useState(false);
   const [verifications, setVerifications] = useState<VerificationMessage[]>([]);
   const [verificationInput, setVerificationInput] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
-  const [activeTab, setActiveTab] = useState<TabType>('verify');
+  const [activeTab, setActiveTab] = useState<TabType>('chat');
   const [showSidebar, setShowSidebar] = useState(true);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const verificationEndRef = useRef<HTMLDivElement>(null);
@@ -72,27 +76,131 @@ export function Chat() {
   }
 
   const handleSendChat = () => {
-    if (!chatInput.trim()) return;
+    if (!chatInput.trim() || !activeCharacter || isChatLoading) return;
 
+    const message = chatInput.trim();
     const userMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
-      content: chatInput,
+      content: message,
       timestamp: new Date(),
     };
+    const assistantId = (Date.now() + 1).toString();
 
-    setChatMessages(prev => [...prev, userMessage]);
+    setChatMessages(prev => [...prev, userMessage, {
+      id: assistantId,
+      role: 'assistant',
+      content: '',
+      timestamp: new Date(),
+      isStreaming: true,
+    }]);
     setChatInput('');
+    setIsChatLoading(true);
 
-    setTimeout(() => {
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: 'Funkcja czatu z postacią jest w trakcie implementacji. Możesz korzystać z weryfikacji faktów!',
-        timestamp: new Date(),
+    try {
+      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+      const urlParams = new URLSearchParams({
+        message,
+        characterId: activeCharacter.id,
+        ...(chatConversationId && { conversationId: chatConversationId }),
+      });
+      const eventSource = new EventSource(`${baseUrl}/chat/stream?${urlParams.toString()}`);
+      let currentContent = '';
+      let finished = false;
+
+      const finalizeMessage = (content: string) => {
+        setChatMessages(prev =>
+          prev.map(m => m.id === assistantId ? { ...m, content, isStreaming: false } : m)
+        );
       };
-      setChatMessages(prev => [...prev, assistantMessage]);
-    }, 500);
+
+      eventSource.addEventListener('chunk', (event) => {
+        if (finished) return;
+        const data = (event as MessageEvent).data;
+        if (!data || data.trim() === '') return;
+        currentContent += data;
+        finalizeMessage(currentContent);
+      });
+
+      eventSource.addEventListener('final', (event) => {
+        if (finished) return;
+        finished = true;
+        const data = (event as MessageEvent).data;
+        try {
+          const parsed = JSON.parse(data) as { message?: string; conversationId?: string };
+          if (parsed.conversationId) {
+            setChatConversationId(parsed.conversationId);
+          }
+          const finalText = parsed.message?.trim() || currentContent.trim();
+          finalizeMessage(finalText || 'Brak odpowiedzi');
+        } catch {
+          finalizeMessage(currentContent.trim() || 'Brak odpowiedzi');
+        }
+        eventSource.close();
+        setIsChatLoading(false);
+      });
+
+      eventSource.addEventListener('complete', () => {
+        if (finished) return;
+        finished = true;
+        finalizeMessage(currentContent.trim() || 'Brak odpowiedzi');
+        eventSource.close();
+        setIsChatLoading(false);
+      });
+
+      eventSource.addEventListener('error', (event) => {
+        const backendMessage = (event as MessageEvent).data;
+        if (finished) return;
+        finished = true;
+        finalizeMessage(backendMessage?.trim() || currentContent.trim() || 'Nie udało się uzyskać odpowiedzi. Spróbuj ponownie za chwilę.');
+        eventSource.close();
+        setIsChatLoading(false);
+      });
+
+      eventSource.onerror = async () => {
+        if (finished) return;
+        eventSource.close();
+        try {
+          const response = await axios.post<{ message: string; conversationId: string }>(
+            `${baseUrl}/chat`,
+            {
+              message,
+              characterId: activeCharacter.id,
+              conversationId: chatConversationId,
+            },
+            { timeout: 180000 }
+          );
+          setChatConversationId(response.data.conversationId);
+          finalizeMessage(response.data.message || currentContent || 'Brak odpowiedzi');
+        } catch (error) {
+          let fallbackMessage = 'Nie udało się uzyskać odpowiedzi. Spróbuj ponownie za chwilę.';
+          if (axios.isAxiosError(error)) {
+            const msg = (error.response?.data as { message?: string } | undefined)?.message;
+            if (msg && msg.trim()) {
+              fallbackMessage = msg;
+            } else if (error.response?.status === 504) {
+              fallbackMessage = 'Model AI odpowiada zbyt długo. Spróbuj ponownie za chwilę.';
+            } else if (error.response?.status === 503) {
+              fallbackMessage = 'Usługa modelu AI jest chwilowo niedostępna. Spróbuj ponownie za chwilę.';
+            }
+          }
+          finalizeMessage(currentContent.trim() || fallbackMessage);
+        } finally {
+          finished = true;
+          setIsChatLoading(false);
+        }
+      };
+    } catch (error) {
+      console.error('Chat streaming setup failed:', error);
+      setChatMessages(prev =>
+        prev.map(m =>
+          m.id === assistantId
+            ? { ...m, content: 'Nie udało się uzyskać odpowiedzi. Spróbuj ponownie za chwilę.', isStreaming: false }
+            : m
+        )
+      );
+      setIsChatLoading(false);
+    }
   };
 
   const handleVerify = async () => {
@@ -263,7 +371,7 @@ export function Chat() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 flex flex-col lg:flex-row">
+    <div className="h-screen overflow-hidden bg-slate-900 flex flex-col lg:flex-row">
       {/* Sidebar - character info */}
       <div className={`${showSidebar ? 'h-auto' : 'h-14'} lg:h-auto lg:w-72 bg-slate-800 lg:border-r border-slate-700 flex flex-col transition-all duration-300`}>
         <div className="flex items-center justify-between p-3 lg:p-4 border-b border-slate-700">
@@ -312,7 +420,7 @@ export function Chat() {
       </div>
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col min-h-0">
+      <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
         {/* Tabs - mobile */}
         <div className="lg:hidden flex border-b border-slate-700">
           <button
@@ -325,7 +433,6 @@ export function Chat() {
           >
             <MessageCircle className="w-4 h-4" />
             Chat
-            <span className="text-xs bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded">wkrótce</span>
           </button>
           <button
             onClick={() => setActiveTab('verify')}
@@ -345,7 +452,6 @@ export function Chat() {
           <div className="flex-1 p-4 border-b border-slate-700 flex items-center gap-2">
             <MessageCircle className="w-5 h-5 text-blue-400" />
             <h3 className="font-semibold text-white">Czat z {activeCharacter.name}</h3>
-            <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded">wkrótce</span>
           </div>
           <div className="flex-1 p-4 border-b border-slate-700 flex items-center gap-2">
             <Shield className="w-5 h-5 text-amber-400" />
@@ -354,7 +460,7 @@ export function Chat() {
         </div>
 
         {/* Content area */}
-        <div className="flex-1 flex flex-col lg:flex-row min-h-0">
+        <div className="flex-1 min-h-0 flex flex-col lg:flex-row overflow-hidden">
           {/* Chat panel */}
           <div className={`flex-1 flex flex-col ${activeTab !== 'chat' ? 'hidden lg:flex' : 'flex'} border-r border-slate-700`}>
             <div className="flex-1 overflow-y-auto p-3 lg:p-4 space-y-3 lg:space-y-4">
@@ -362,7 +468,7 @@ export function Chat() {
                 <div className="flex flex-col items-center justify-center h-full text-center p-4">
                   <Bot className="w-10 lg:w-12 h-10 lg:h-12 text-slate-600 mb-3" />
                   <p className="text-slate-400 text-sm">
-                    Funkcja czatu z postacią historyczną<br/>jest w przygotowaniu
+                    Zadaj pytanie postaci historycznej.<br/>Odpowiedzi używają opisu i cytatów, jeśli są dostępne.
                   </p>
                 </div>
               ) : (
@@ -378,7 +484,14 @@ export function Chat() {
                           : 'bg-slate-800 text-slate-100'
                       }`}
                     >
-                      <p className="text-sm">{message.content}</p>
+                      {message.isStreaming && !message.content ? (
+                        <div className="flex items-center gap-2">
+                          <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />
+                          <p className="text-sm">Postać odpowiada...</p>
+                        </div>
+                      ) : (
+                        <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                      )}
                     </div>
                   </div>
                 ))
@@ -393,15 +506,20 @@ export function Chat() {
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSendChat()}
-                  placeholder="Chat wkrótce dostępny..."
-                  disabled
-                  className="flex-1 px-3 lg:px-4 py-2 lg:py-3 bg-slate-800 border border-slate-700 rounded-xl text-sm text-white placeholder-slate-500 disabled:opacity-50"
+                  placeholder="Napisz wiadomość do postaci..."
+                  disabled={isChatLoading}
+                  className="flex-1 px-3 lg:px-4 py-2 lg:py-3 bg-slate-800 border border-slate-700 rounded-xl text-sm text-white placeholder-slate-500 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 <button
-                  disabled
-                  className="px-3 lg:px-4 py-2 lg:py-3 bg-slate-700 text-slate-500 rounded-xl"
+                  onClick={handleSendChat}
+                  disabled={isChatLoading || !chatInput.trim()}
+                  className="px-3 lg:px-4 py-2 lg:py-3 bg-blue-500 hover:bg-blue-600 disabled:bg-slate-700 disabled:cursor-not-allowed text-white rounded-xl transition-colors"
                 >
-                  <Send className="w-4 lg:w-5 h-4 lg:h-5" />
+                  {isChatLoading ? (
+                    <Loader2 className="w-4 lg:w-5 h-4 lg:h-5 animate-spin" />
+                  ) : (
+                    <Send className="w-4 lg:w-5 h-4 lg:h-5" />
+                  )}
                 </button>
               </div>
             </div>

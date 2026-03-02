@@ -69,6 +69,15 @@ resilience4j:
         timeout-duration: 500ms
 
 app:
+  ai:
+    ollama:
+      connect-timeout-seconds: ${OLLAMA_CONNECT_TIMEOUT_SECONDS:30}
+      read-timeout-seconds: ${OLLAMA_READ_TIMEOUT_SECONDS:240}
+  chat:
+    context-window-messages: ${CHAT_CONTEXT_WINDOW_MESSAGES:12}
+    context-message-max-chars: ${CHAT_CONTEXT_MESSAGE_MAX_CHARS:600}
+    summary-trigger-messages: ${CHAT_SUMMARY_TRIGGER_MESSAGES:20}
+    summary-max-chars: ${CHAT_SUMMARY_MAX_CHARS:1200}
   cors:
     allowed-origins: http://localhost:5173,http://localhost:3000
     allowed-methods: GET,POST,PUT,DELETE,OPTIONS

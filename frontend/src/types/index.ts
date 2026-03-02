@@ -31,6 +31,7 @@ export interface Conversation {
 
 export interface ChatRequest {
   message: string;
+  characterId: string;
   conversationId?: string;
 }
 

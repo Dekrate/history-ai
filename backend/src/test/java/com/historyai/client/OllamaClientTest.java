@@ -33,7 +33,7 @@ class OllamaClientTest {
         when(restTemplate.postForObject(anyString(), any(Object.class), eq(String.class)))
                 .thenReturn(jsonResponse);
 
-        OllamaClient client = new OllamaClient("http://localhost:11434", "test-model", builder);
+        OllamaClient client = new OllamaClient("http://localhost:11434", "test-model", 30, 240, builder);
         String result = client.generate("Test prompt");
 
         assertEquals("Test response", result);
@@ -54,7 +54,7 @@ class OllamaClientTest {
         when(restTemplate.postForObject(anyString(), any(Object.class), eq(String.class)))
                 .thenReturn(jsonResponse);
 
-        OllamaClient client = new OllamaClient("http://localhost:11434", "test-model", builder);
+        OllamaClient client = new OllamaClient("http://localhost:11434", "test-model", 30, 240, builder);
         String result = client.generate("Test prompt");
 
         assertEquals("", result);
@@ -74,7 +74,7 @@ class OllamaClientTest {
         when(restTemplate.postForObject(anyString(), any(Object.class), eq(String.class)))
                 .thenReturn(null);
 
-        OllamaClient client = new OllamaClient("http://localhost:11434", "test-model", builder);
+        OllamaClient client = new OllamaClient("http://localhost:11434", "test-model", 30, 240, builder);
         String result = client.generate("Test prompt");
 
         assertEquals("", result);
@@ -94,7 +94,7 @@ class OllamaClientTest {
         when(restTemplate.postForObject(anyString(), any(Object.class), eq(String.class)))
                 .thenThrow(new RuntimeException("API error"));
 
-        OllamaClient client = new OllamaClient("http://localhost:11434", "test-model", builder);
+        OllamaClient client = new OllamaClient("http://localhost:11434", "test-model", 30, 240, builder);
 
         assertThrows(OllamaClient.OllamaApiException.class, 
                 () -> client.generate("Test prompt"));
