@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-const apiBase = /http:\/\/localhost:8080\/api/;
+const apiBase = 'http://localhost:8080/api/';
 
 test('empty state and import flow', async ({ page }) => {
   await page.route(`${apiBase}characters`, async (route) => {

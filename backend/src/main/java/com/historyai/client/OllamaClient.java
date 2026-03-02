@@ -3,7 +3,10 @@ package com.historyai.client;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.time.Duration;
@@ -99,10 +102,11 @@ public class OllamaClient {
      */
     public void generateStream(String model, String prompt, Consumer<String> consumer) {
         LOG.debug("Generating streaming response with model: {}", model);
+        HttpURLConnection conn = null;
 
         try {
             URL url = new URL(baseUrl + "/api/generate");
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("POST");
             conn.setRequestProperty("Content-Type", "application/json");
             conn.setDoOutput(true);
@@ -115,37 +119,65 @@ public class OllamaClient {
                     escapeJson(prompt)
             );
 
-            conn.getOutputStream().write(requestBody.getBytes(StandardCharsets.UTF_8));
-            conn.getOutputStream().flush();
+            try (OutputStream outputStream = conn.getOutputStream()) {
+                outputStream.write(requestBody.getBytes(StandardCharsets.UTF_8));
+                outputStream.flush();
+            }
 
-            BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8));
-            String line;
-            StringBuilder fullResponse = new StringBuilder();
+            int status = conn.getResponseCode();
+            boolean success = status >= 200 && status < 300;
+            InputStream responseStream = success ? conn.getInputStream() : conn.getErrorStream();
+            if (responseStream == null) {
+                throw new OllamaApiException("Ollama returned HTTP " + status + " with empty body", null);
+            }
 
-            while ((line = reader.readLine()) != null) {
-                if (line.trim().isEmpty()) continue;
-                try {
-                    JsonNode node = objectMapper.readTree(line);
-                    JsonNode responseNode = node.get("response");
-                    if (responseNode != null) {
-                        String text = responseNode.asText();
-                        consumer.accept(text);
-                        fullResponse.append(text);
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(responseStream, StandardCharsets.UTF_8))) {
+                if (!success) {
+                    throw new OllamaApiException(
+                            "Ollama returned HTTP " + status + ": " + readAll(reader),
+                            null
+                    );
+                }
+
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    if (line.trim().isEmpty()) {
+                        continue;
                     }
-                    if (node.has("done") && node.get("done").asBoolean()) {
-                        break;
+                    try {
+                        JsonNode node = objectMapper.readTree(line);
+                        JsonNode responseNode = node.get("response");
+                        if (responseNode != null) {
+                            consumer.accept(responseNode.asText());
+                        }
+                        if (node.has("done") && node.get("done").asBoolean()) {
+                            break;
+                        }
+                    } catch (Exception e) {
+                        LOG.debug("Error parsing line: {}", line);
                     }
-                } catch (Exception e) {
-                    LOG.debug("Error parsing line: {}", line);
                 }
             }
-            reader.close();
-            conn.disconnect();
-
         } catch (Exception e) {
             LOG.error("Error calling Ollama streaming: {}", e.getMessage());
             throw new OllamaApiException("Failed to generate streaming response from Ollama", e);
+        } finally {
+            if (conn != null) {
+                conn.disconnect();
+            }
         }
+    }
+
+    private String readAll(BufferedReader reader) throws IOException {
+        StringBuilder body = new StringBuilder();
+        String line;
+        while ((line = reader.readLine()) != null) {
+            if (body.length() > 0) {
+                body.append('\n');
+            }
+            body.append(line);
+        }
+        return body.toString();
     }
 
     private String parseNdjsonResponse(String json) {

@@ -14,12 +14,16 @@ import java.util.stream.Collectors;
 public class CorsConfig {
 
     private final List<String> allowedOrigins;
+    private final List<String> allowedMethods;
+    private final List<String> allowedHeaders;
 
-    public CorsConfig(@Value("${spring.mvc.cors.allowed-origins:}") String allowedOrigins) {
-        this.allowedOrigins = Arrays.stream(allowedOrigins.split(","))
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .collect(Collectors.toList());
+    public CorsConfig(
+            @Value("${app.cors.allowed-origins:http://localhost:5173,http://localhost:3000}") String allowedOrigins,
+            @Value("${app.cors.allowed-methods:GET,POST,PUT,DELETE,OPTIONS}") String allowedMethods,
+            @Value("${app.cors.allowed-headers:*}") String allowedHeaders) {
+        this.allowedOrigins = parseCsv(allowedOrigins);
+        this.allowedMethods = parseCsv(allowedMethods);
+        this.allowedHeaders = parseCsv(allowedHeaders);
     }
 
     @Bean
@@ -32,11 +36,19 @@ public class CorsConfig {
             allowedOrigins.forEach(config::addAllowedOrigin);
             config.setAllowCredentials(true);
         }
-        config.addAllowedMethod("*");
-        config.addAllowedHeader("*");
+        allowedMethods.forEach(config::addAllowedMethod);
+        allowedHeaders.forEach(config::addAllowedHeader);
+        config.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
         return new CorsFilter(source);
+    }
+
+    private List<String> parseCsv(String csv) {
+        return Arrays.stream(csv.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toList());
     }
 }

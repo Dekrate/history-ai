@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Search, Users, Loader2, AlertTriangle, Database, RefreshCw, Download } from 'lucide-react';
-import { characterApi } from '../services/api.ts';
+import { characterApi } from '../services/api';
 import type { HistoricalCharacter } from '../types';
 import { Link } from 'react-router-dom';
 

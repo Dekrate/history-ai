@@ -100,12 +100,13 @@ export function Chat() {
 
     setIsVerifying(true);
     const messageId = Date.now().toString();
+    const claim = verificationInput.trim();
     let currentContent = '';
     let finalized = false;
-    
+
     setVerifications(prev => [...prev, {
       id: messageId,
-      claim: verificationInput,
+      claim,
       results: [],
       timestamp: new Date(),
       isStreaming: true,
@@ -115,132 +116,109 @@ export function Chat() {
     try {
       const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
       const url = `${baseUrl}/factcheck/stream`;
+      const maxReconnectionAttempts = 3;
+      const reconnectionDelay = 2000;
       const urlParams = new URLSearchParams({
-        message: verificationInput,
+        message: claim,
         characterName: activeCharacter.name,
         ...(activeCharacter.biography && { characterContext: activeCharacter.biography })
       });
 
-      const eventSource = new EventSource(url + '?' + urlParams.toString());
-
-      const appendChunk = (data: string) => {
-        if (data.trim() === '') return;
-        currentContent += data;
-        setVerifications(prev =>
-          prev.map(v =>
-            v.id === messageId
-              ? { ...v, streamingContent: formatStreamText(currentContent) }
-              : v
-          )
-        );
-      };
-
-      const completeStream = () => {
-        eventSource.close();
-        setIsVerifying(false);
+      const finalizeStructured = (result: FactCheckResult) => {
         if (finalized) return;
         finalized = true;
-        const parsed = parseStructuredResult(currentContent);
+        setIsVerifying(false);
+        setVerificationInput('');
         setVerifications(prev =>
           prev.map(v =>
             v.id === messageId
               ? {
                   ...v,
                   isStreaming: false,
-                  results: [
-                    {
-                      verification: parsed?.verification ?? 'VERIFIED',
-                      confidence: parsed?.confidence ?? 0.9,
-                      explanation: parsed?.explanation || 'Weryfikacja zakończona',
-                      source: parsed?.source ?? 'AI',
-                    },
-                  ],
+                  results: [result],
                 }
               : v
           )
         );
       };
 
-      // Default EventSource "message" handler (only used if server sends unnamed events)
-      eventSource.onmessage = (event) => {
-        if (event.data?.startsWith('Error:')) {
-          eventSource.close();
-          setIsVerifying(false);
-          return;
-        }
-        appendChunk(event.data);
+      const finalizeFromText = () => {
+        const parsed = parseStructuredResult(currentContent);
+        finalizeStructured({
+          verification: parsed?.verification ?? 'UNVERIFIABLE',
+          confidence: parsed?.confidence ?? 0.5,
+          explanation: parsed?.explanation || currentContent || 'Weryfikacja zakończona',
+          source: parsed?.source ?? 'AI',
+        });
       };
 
-      // Handle named SSE events emitted by the backend
-      eventSource.addEventListener('chunk', (event) => {
-        appendChunk((event as MessageEvent).data);
-      });
+      const streamWithRetry = (attempt: number) => {
+        const eventSource = new EventSource(url + '?' + urlParams.toString());
 
-      eventSource.addEventListener('final', (event) => {
-        const data = (event as MessageEvent).data;
-        const parsedResult = parseFinalEvent(data);
-        if (parsedResult) {
-          currentContent = parsedResult.explanation || '';
-          eventSource.close();
-          setIsVerifying(false);
+        const appendChunk = (data: string) => {
+          if (data.trim() === '' || finalized) return;
+          currentContent += data;
           setVerifications(prev =>
             prev.map(v =>
               v.id === messageId
-                ? {
-                    ...v,
-                    isStreaming: false,
-                    results: [parsedResult],
-                  }
+                ? { ...v, streamingContent: formatStreamText(currentContent) }
                 : v
             )
           );
-          finalized = true;
-          return;
-        }
-        currentContent = data;
-        completeStream();
-      });
+        };
 
-      eventSource.addEventListener('complete', () => {
-        completeStream();
-      });
+        eventSource.onmessage = (event) => {
+          if (event.data?.startsWith('Error:')) {
+            eventSource.close();
+            finalizeFromText();
+            return;
+          }
+          appendChunk(event.data);
+        };
 
-      let reconnectionAttempts = 0;
-      const maxReconnectionAttempts = 3;
-      const reconnectionDelay = 2000;
+        eventSource.addEventListener('chunk', (event) => {
+          appendChunk((event as MessageEvent).data);
+        });
 
-      eventSource.onerror = () => {
-        eventSource.close();
-        if (reconnectionAttempts < maxReconnectionAttempts) {
-          reconnectionAttempts++;
-          setTimeout(() => {
-            handleVerify();
-          }, reconnectionDelay);
-          return;
-        }
+        eventSource.addEventListener('final', (event) => {
+          if (finalized) return;
+          const data = (event as MessageEvent).data;
+          const parsedResult = parseFinalEvent(data);
+          if (parsedResult) {
+            currentContent = parsedResult.explanation || currentContent;
+            eventSource.close();
+            finalizeStructured(parsedResult);
+            return;
+          }
+          currentContent = data;
+          eventSource.close();
+          finalizeFromText();
+        });
 
-        setIsVerifying(false);
-        setVerifications(prev =>
-          prev.map(v =>
-            v.id === messageId
-              ? {
-                  ...v,
-                  isStreaming: false,
-                  results: [
-                    {
-                      verification: 'VERIFIED',
-                      confidence: 0.8,
-                      explanation: currentContent || 'Weryfikacja zakończona (tryb fallback)',
-                      source: 'AI',
-                    },
-                  ],
-                }
-              : v
-          )
-        );
+        eventSource.addEventListener('complete', () => {
+          eventSource.close();
+          finalizeFromText();
+        });
+
+        eventSource.onerror = () => {
+          eventSource.close();
+          if (finalized) return;
+          if (attempt < maxReconnectionAttempts) {
+            setTimeout(() => {
+              streamWithRetry(attempt + 1);
+            }, reconnectionDelay);
+            return;
+          }
+          finalizeStructured({
+            verification: 'UNVERIFIABLE',
+            confidence: 0.5,
+            explanation: currentContent || 'Weryfikacja nie powiodła się',
+            source: 'AI',
+          });
+        };
       };
 
-      setVerificationInput('');
+      streamWithRetry(0);
     } catch (error) {
       console.error('Verification failed:', error);
       setIsVerifying(false);

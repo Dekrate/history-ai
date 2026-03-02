@@ -1,10 +1,12 @@
 package com.historyai.controller;
 
+import com.historyai.client.OllamaClient;
 import com.historyai.dto.FactCheckRequest;
 import com.historyai.dto.FactCheckResult;
 import com.historyai.service.FactCheckPromptBuilder;
 import com.historyai.service.FactCheckService;
 import com.historyai.service.WikiquoteService;
+import com.historyai.service.WikipediaService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,6 +19,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.Executor;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -34,10 +37,19 @@ class FactCheckControllerTest {
     private WikiquoteService wikiquoteService;
 
     @Mock
+    private WikipediaService wikipediaService;
+
+    @Mock
+    private OllamaClient ollamaClient;
+
+    @Mock
     private FactCheckPromptBuilder promptBuilder;
 
     @Mock
     private ObjectMapper objectMapper;
+
+    @Mock
+    private Executor streamingExecutor;
 
     @InjectMocks
     private FactCheckController controller;

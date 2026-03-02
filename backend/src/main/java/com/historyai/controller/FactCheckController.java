@@ -14,8 +14,11 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -43,16 +46,19 @@ public class FactCheckController {
     private final WikiquoteService wikiquoteService;
     private final FactCheckPromptBuilder promptBuilder;
     private final ObjectMapper objectMapper;
+    private final Executor streamingExecutor;
 
     public FactCheckController(FactCheckService factCheckService, OllamaClient ollamaClient,
             WikipediaService wikipediaService, WikiquoteService wikiquoteService,
-            FactCheckPromptBuilder promptBuilder, ObjectMapper objectMapper) {
+            FactCheckPromptBuilder promptBuilder, ObjectMapper objectMapper,
+            @Qualifier("streamingExecutor") Executor streamingExecutor) {
         this.factCheckService = factCheckService;
         this.ollamaClient = ollamaClient;
         this.wikipediaService = wikipediaService;
         this.wikiquoteService = wikiquoteService;
         this.promptBuilder = promptBuilder;
         this.objectMapper = objectMapper;
+        this.streamingExecutor = streamingExecutor;
     }
 
     @PostMapping
@@ -79,15 +85,27 @@ public class FactCheckController {
             @RequestParam String characterName,
             @RequestParam(required = false) String characterContext) {
         SseEmitter emitter = new SseEmitter(180000L);
+        CompletableFuture.runAsync(
+                () -> streamFactCheck(emitter, message, characterName, characterContext),
+                streamingExecutor
+        );
+        return emitter;
+    }
+
+    private void streamFactCheck(
+            SseEmitter emitter,
+            String message,
+            String characterName,
+            String characterContext) {
         StringBuilder fullResponse = new StringBuilder();
         StringBuilder buffer = new StringBuilder();
-        
+
         LOG.info("Streaming fact-check request for message: {}", 
                 message.substring(0, Math.min(50, message.length())));
-        
+
         try {
             emitter.send(SseEmitter.event().name("start").data("Starting verification..."));
-            
+
             WikipediaResponse wikiContext = null;
             try {
                 if (characterName != null && !characterName.isBlank()) {
@@ -99,11 +117,11 @@ public class FactCheckController {
             } catch (Exception e) {
                 LOG.warn("Error fetching Wikipedia: {}", e.getMessage());
             }
-            
+
             List<String> quotes = wikiquoteService.getQuotes(characterName);
             String prompt = promptBuilder.build(message, characterContext, wikiContext, quotes);
             emitter.send(SseEmitter.event().name("prompt").data("Analyzing with AI..."));
-            
+
             ollamaClient.generateStream(ollamaClient.getDefaultModel(), prompt, chunk -> {
                 try {
                     fullResponse.append(chunk);
@@ -116,7 +134,7 @@ public class FactCheckController {
                     LOG.error("Error sending chunk: {}", e.getMessage());
                 }
             });
-            
+
             if (buffer.length() > 0) {
                 try {
                     emitter.send(SseEmitter.event().name("chunk").data(buffer.toString()));
@@ -131,7 +149,7 @@ public class FactCheckController {
             emitter.send(SseEmitter.event().name("final").data(finalJson));
             emitter.send(SseEmitter.event().name("complete").data("Verification complete"));
             emitter.complete();
-            
+
         } catch (Exception e) {
             LOG.error("Streaming error: {}", e.getMessage());
             try {
@@ -141,8 +159,6 @@ public class FactCheckController {
             }
             emitter.completeWithError(e);
         }
-        
-        return emitter;
     }
 
     private boolean shouldFlush(StringBuilder buffer) {

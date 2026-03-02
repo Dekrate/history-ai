@@ -27,6 +27,24 @@ describe('parseStructuredResult', () => {
     expect(result?.confidence).toBe(0.95);
   });
 
+  it('normalizes percentage confidence to a [0,1] value', () => {
+    const input = 'VERIFICATION: TRUE\nCONFIDENCE: 95\nEXPLANATION: Ok';
+    const result = parseStructuredResult(input);
+    expect(result?.confidence).toBe(0.95);
+  });
+
+  it('normalizes confidence with percent sign', () => {
+    const input = 'VERIFICATION: TRUE\nCONFIDENCE: 0.95%\nEXPLANATION: Ok';
+    const result = parseStructuredResult(input);
+    expect(result?.confidence).toBeCloseTo(0.0095);
+  });
+
+  it('clamps out-of-range confidence values', () => {
+    const input = 'VERIFICATION: TRUE\nCONFIDENCE: 250\nEXPLANATION: Ok';
+    const result = parseStructuredResult(input);
+    expect(result?.confidence).toBe(1);
+  });
+
   it('returns null when no fields are found', () => {
     const result = parseStructuredResult('Just text');
     expect(result).toBeNull();
