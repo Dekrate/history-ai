@@ -117,7 +117,7 @@ export function Chat() {
       eventSource.addEventListener('chunk', (event) => {
         if (finished) return;
         const data = (event as MessageEvent).data;
-        if (!data || data.trim() === '') return;
+        if (typeof data !== 'string' || data.length === 0) return;
         currentContent += data;
         finalizeMessage(currentContent);
       });
@@ -264,7 +264,7 @@ export function Chat() {
         const eventSource = new EventSource(url + '?' + urlParams.toString());
 
         const appendChunk = (data: string) => {
-          if (data.trim() === '' || finalized) return;
+          if (finalized || data.length === 0) return;
           currentContent += data;
           setVerifications(prev =>
             prev.map(v =>
