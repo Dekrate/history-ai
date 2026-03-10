@@ -12,6 +12,10 @@ release.properties
 .vscode/
 *.swp
 *.swo
+.classpath
+.factorypath
+.project
+.settings/
 
 # OS
 .DS_Store
