@@ -11,6 +11,13 @@ import org.springframework.context.annotation.Configuration;
 
 import java.util.List;
 
+/**
+ * Spring configuration that sets up the OpenAPI/Swagger metadata for the HistoryAI REST API.
+ * <p>
+ * Exposes the generated OpenAPI specification (e.g. at {@code /v3/api-docs}) and the
+ * interactive Swagger UI (commonly available at {@code /swagger-ui/index.html}),
+ * allowing developers to explore and test the API endpoints.
+ */
 @Configuration
 public class OpenApiConfig {
 
