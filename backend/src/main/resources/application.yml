@@ -37,11 +37,6 @@ spring:
     caffeine:
       spec: maximumSize=1000,expireAfterWrite=24h
 
-  cache:
-    type: caffeine
-    caffeine:
-      spec: maximumSize=1000,expireAfterWrite=24h
-
 server:
   port: ${SERVER_PORT:8080}
   tomcat:
