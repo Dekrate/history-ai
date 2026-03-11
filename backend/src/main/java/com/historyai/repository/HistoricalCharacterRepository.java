@@ -36,7 +36,7 @@ public interface HistoricalCharacterRepository extends JpaRepository<HistoricalC
     /**
      * Finds a historical character by exact name match.
      *
-     * @param name the name to search for (case-insensitive via repository implementation)
+     * @param name the name to search for (exact, case-sensitive match as defined by the database collation)
      * @return an {@link Optional} containing the character if found, or empty if not found
      */
     Optional<HistoricalCharacter> findByName(String name);
