@@ -24,7 +24,7 @@ import org.springframework.stereotype.Service;
  *   <li>Integration with Wikidata for nationality data</li>
  * </ul>
  *
- * <p>The service first tries English Wikipedia, then falls back to Polish Wikipedia
+ * <p>The service first tries Polish Wikipedia, then falls back to English Wikipedia
  * if the character is not found.</p>
  *
  * @author HistoryAI Team
