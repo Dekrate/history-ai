@@ -31,7 +31,22 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 /**
  * REST controller for fact-checking functionality.
- * Provides endpoints for verifying historical claims using Wikipedia and AI.
+ *
+ * <p>Provides endpoints for verifying historical claims using Wikipedia and AI.
+ * Supports both synchronous fact-checking and streaming responses.</p>
+ *
+ * <p>The controller integrates with:</p>
+ * <ul>
+ *   <li>{@link com.historyai.service.FactCheckService} - Main fact-checking logic</li>
+ *   <li>{@link WikipediaService} - Wikipedia API integration</li>
+ *   <li>{@link WikiquoteService} - Quote retrieval</li>
+ *   <li>{@link OllamaClient} - LLM for verification</li>
+ * </ul>
+ *
+ * @author HistoryAI Team
+ * @version 1.0
+ * @see FactCheckResult
+ * @see FactCheckRequest
  */
 @RestController
 @RequestMapping("/api/factcheck")

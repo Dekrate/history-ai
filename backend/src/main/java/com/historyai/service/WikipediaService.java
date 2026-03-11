@@ -15,7 +15,23 @@ import org.springframework.stereotype.Service;
 
 /**
  * Service for retrieving Wikipedia information about historical characters.
- * Provides caching and rate limiting for Wikipedia API calls.
+ *
+ * <p>Provides a unified interface for fetching Wikipedia data with the following features:</p>
+ * <ul>
+ *   <li>Multi-language support (English and Polish Wikipedia)</li>
+ *   <li>Caching of API responses to reduce redundant requests</li>
+ *   <li>Rate limiting to respect Wikipedia's usage policies</li>
+ *   <li>Integration with Wikidata for nationality data</li>
+ * </ul>
+ *
+ * <p>The service first tries English Wikipedia, then falls back to Polish Wikipedia
+ * if the character is not found.</p>
+ *
+ * @author HistoryAI Team
+ * @version 1.0
+ * @see WikipediaResponse
+ * @see com.historyai.client.WikipediaApiClient
+ * @see <a href="https://en.wikipedia.org/api/rest_v1/">Wikipedia REST API</a>
  */
 @Service
 @CacheConfig(cacheNames = "wikipedia")

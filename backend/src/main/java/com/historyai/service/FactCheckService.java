@@ -12,8 +12,24 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 /**
- * Service for fact-checking historical claims.
- * Uses Wikipedia for context and Ollama (LLM) for verification.
+ * Service for fact-checking historical claims using AI and Wikipedia.
+ *
+ * <p>Provides comprehensive fact-checking capabilities by:</p>
+ * <ul>
+ *   <li>Extracting factual claims from user messages</li>
+ *   <li>Fetching relevant Wikipedia context about the historical figure</li>
+ *   <li>Querying an LLM (via Ollama) to verify claims against Wikipedia context</li>
+ *   <li>Parsing verification results and confidence scores</li>
+ *   <li>Enriching responses with relevant quotes from Wikiquote</li>
+ * </ul>
+ *
+ * <p>The service uses a prompt-based approach where the LLM is instructed to analyze
+ * claims and provide structured verification results.</p>
+ *
+ * @author HistoryAI Team
+ * @version 1.0
+ * @see FactCheckResult
+ * @see com.historyai.controller.FactCheckController
  */
 @Service
 public class FactCheckService {

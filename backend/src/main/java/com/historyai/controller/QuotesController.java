@@ -14,7 +14,17 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * REST controller for debugging Wikiquote integration.
+ * REST controller for retrieving quotes from Wikiquote.
+ *
+ * <p>Provides a debug endpoint to test Wikiquote integration and retrieve
+ * famous quotes about historical figures.</p>
+ *
+ * <p>Note: This is primarily for debugging and development purposes.
+ * Production use should go through the fact-check endpoint.</p>
+ *
+ * @author HistoryAI Team
+ * @version 1.0
+ * @see WikiquoteService
  */
 @RestController
 @RequestMapping("/api/quotes")

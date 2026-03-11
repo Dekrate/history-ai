@@ -32,8 +32,23 @@ import org.springframework.web.servlet.NoHandlerFoundException;
 
 /**
  * Global exception handler providing centralized error handling across all REST endpoints.
- * Returns standardized error responses following RFC 7807 Problem Details specification.
- * Includes structured logging and trace ID propagation for debugging.
+ *
+ * <p>Returns standardized error responses following RFC 7807 Problem Details specification.
+ * Includes structured logging and trace ID propagation for debugging.</p>
+ *
+ * <p>Handles exceptions include:</p>
+ * <ul>
+ *   <li>Character not found (404)</li>
+ *   <li>Character already exists (409)</li>
+ *   <li>Wikipedia API errors</li>
+ *   <li>Validation errors (400)</li>
+ *   <li>Generic server errors (500)</li>
+ * </ul>
+ *
+ * @author HistoryAI Team
+ * @version 1.0
+ * @see ErrorResponse
+ * @see <a href="https://tools.ietf.org/html/rfc7807">RFC 7807</a>
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {

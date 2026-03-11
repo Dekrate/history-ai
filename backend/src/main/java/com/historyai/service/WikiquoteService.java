@@ -13,7 +13,16 @@ import org.springframework.stereotype.Service;
 
 /**
  * Service for retrieving quotes from Wikiquote.
- * Tries Polish first, then English.
+ *
+ * <p>Fetches famous quotes from Wikiquote to enrich fact-check responses.
+ * Tries Polish Wikiquote first, then falls back to English if no quotes are found.</p>
+ *
+ * <p>Results are cached to minimize API calls and improve response times.</p>
+ *
+ * @author HistoryAI Team
+ * @version 1.0
+ * @see com.historyai.client.WikiquoteApiClient
+ * @see <a href="https://www.wikiquote.org/">Wikiquote</a>
  */
 @Service
 @CacheConfig(cacheNames = "wikiquote")

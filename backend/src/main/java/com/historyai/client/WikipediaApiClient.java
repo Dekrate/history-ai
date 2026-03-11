@@ -13,7 +13,22 @@ import org.springframework.web.client.RestTemplate;
 
 /**
  * Client for interacting with the Wikipedia REST API.
- * Retrieves summary information about historical characters and topics.
+ *
+ * <p>Retrieves summary information about historical characters and topics
+ * from the Wikipedia REST API. Supports fetching:</p>
+ * <ul>
+ *   <li>Page summaries (title, extract, description)</li>
+ *   <li>Thumbnail images</li>
+ *   <li>Wikidata entity IDs for additional data</li>
+ *   <li>Content URLs for linking to full articles</li>
+ * </ul>
+ *
+ * <p>Uses configurable timeouts and error handling for robust integration.</p>
+ *
+ * @author HistoryAI Team
+ * @version 1.0
+ * @see WikipediaResponse
+ * @see <a href="https://en.wikipedia.org/api/rest_v1/">Wikipedia REST API</a>
  */
 @Component
 public class WikipediaApiClient {

@@ -7,7 +7,27 @@ import java.util.Map;
 
 /**
  * Standardized error response DTO returned to clients when an error occurs.
- * Follows RFC 7807 Problem Details specification with extensions for better debugging.
+ *
+ * <p>Follows RFC 7807 Problem Details specification with extensions for better debugging.
+ * This DTO provides a consistent error response format across all API endpoints,
+ * making it easier for clients to handle errors programmatically.</p>
+ *
+ * <p>Example error response:</p>
+ * <pre>
+ * {
+ *   "timestamp": "2026-03-11T21:00:00Z",
+ *   "status": 404,
+ *   "error": "Not Found",
+ *   "message": "Character not found: 550e8400-e29b-41d4-a716-446655440000",
+ *   "path": "/api/characters/550e8400-e29b-41d4-a716-446655440000",
+ *   "traceId": "abc123"
+ * }
+ * </pre>
+ *
+ * @author HistoryAI Team
+ * @version 1.0
+ * @see com.historyai.controller.GlobalExceptionHandler
+ * @see <a href="https://tools.ietf.org/html/rfc7807">RFC 7807 - Problem Details for HTTP APIs</a>
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ErrorResponse {

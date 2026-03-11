@@ -5,7 +5,23 @@ import java.util.List;
 import org.springframework.stereotype.Component;
 
 /**
- * Builds prompts for fact-checking using shared formatting rules.
+ * Builds prompts for fact-checking using LLM with structured output format.
+ *
+ * <p>Creates optimized prompts for the Ollama LLM to perform fact-checking
+ * on historical claims. The prompt includes:</p>
+ * <ul>
+ *   <li>Character context from the conversation</li>
+ *   <li>Wikipedia reference information</li>
+ *   <li>Relevant quotes from Wikiquote</li>
+ *   <li>Instructions for structured JSON output</li>
+ * </ul>
+ *
+ * <p>The prompt instructs the LLM to respond in the same language as the claim
+ * while keeping the verification keywords in English.</p>
+ *
+ * @author HistoryAI Team
+ * @version 1.0
+ * @see FactCheckService
  */
 @Component
 public class FactCheckPromptBuilder {

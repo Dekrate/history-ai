@@ -24,7 +24,24 @@ import org.springframework.web.client.RestTemplate;
 
 /**
  * Client for interacting with the Ollama API.
- * Provides text generation capabilities using local LLM models.
+ *
+ * <p>Provides text generation capabilities using local LLM models via Ollama.
+ * Supports both synchronous and streaming responses using Server-Sent Events (SSE).</p>
+ *
+ * <p>Key features:</p>
+ * <ul>
+ *   <li>Chat completion with configurable model</li>
+ *   <li>Streaming response support for real-time output</li>
+ *   <li>Timeout configuration</li>
+ *   <li>Connection pooling via RestTemplate</li>
+ * </ul>
+ *
+ * <p>The client connects to a local Ollama instance, which must be running
+ * and accessible at the configured base URL.</p>
+ *
+ * @author HistoryAI Team
+ * @version 1.0
+ * @see <a href="https://github.com/ollama/ollama">Ollama</a>
  */
 @Component
 public class OllamaClient {
