@@ -23,3 +23,6 @@ test-results/
 *.njsproj
 *.sln
 *.sw?
+
+# Test artifacts
+test-results/
