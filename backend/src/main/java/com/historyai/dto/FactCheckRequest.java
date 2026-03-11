@@ -26,7 +26,7 @@ import jakarta.validation.constraints.NotBlank;
 public class FactCheckRequest {
 
     /** The message containing claims to be verified */
-    @NotBlank(message = "Message must not be blank")
+    @NotBlank
     private String message;
     
     /** Name of the historical character for Wikipedia lookup */
