@@ -41,9 +41,9 @@ export interface ChatResponse {
 }
 
 export interface FactCheckResult {
-  claim: string;
-  verification: 'VERIFIED' | 'FALSE' | 'UNVERIFIABLE';
-  source: string;
+  claim?: string;
+  verification: 'VERIFIED' | 'FALSE' | 'PARTIAL' | 'UNVERIFIABLE';
+  source?: string;
   explanation: string;
   confidence: number;
 }

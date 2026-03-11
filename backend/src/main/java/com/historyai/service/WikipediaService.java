@@ -1,6 +1,7 @@
 package com.historyai.service;
 
 import com.historyai.client.WikipediaApiClient;
+import com.historyai.client.WikidataApiClient;
 import com.historyai.dto.WikipediaResponse;
 import com.historyai.exception.CharacterNotFoundInWikipediaException;
 import com.historyai.exception.WikipediaApiException;
@@ -21,16 +22,21 @@ import org.springframework.stereotype.Service;
 public class WikipediaService {
 
     private static final Logger LOG = LoggerFactory.getLogger(WikipediaService.class);
+    private static final String WIKI_PL_BASE_URL = "https://pl.wikipedia.org/api/rest_v1";
+    private static final String WIKI_EN_BASE_URL = "https://en.wikipedia.org/api/rest_v1";
 
     private final WikipediaApiClient wikipediaApiClient;
+    private final WikidataApiClient wikidataApiClient;
 
     /**
      * Constructs a new WikipediaService.
      *
      * @param wikipediaApiClient the Wikipedia API client
      */
-    public WikipediaService(WikipediaApiClient wikipediaApiClient) {
+    public WikipediaService(WikipediaApiClient wikipediaApiClient,
+            WikidataApiClient wikidataApiClient) {
         this.wikipediaApiClient = wikipediaApiClient;
+        this.wikidataApiClient = wikidataApiClient;
     }
 
     /**
@@ -45,7 +51,31 @@ public class WikipediaService {
     @RateLimiter(name = "wikipedia", fallbackMethod = "getCharacterInfoFallback")
     public WikipediaResponse getCharacterInfo(String characterName) {
         LOG.info("Fetching Wikipedia info for: {}", characterName);
-        return wikipediaApiClient.getCharacterSummary(characterName);
+        try {
+            WikipediaResponse response = wikipediaApiClient.getCharacterSummary(WIKI_PL_BASE_URL, characterName);
+            ensureHuman(response);
+            return response;
+        } catch (CharacterNotFoundInWikipediaException | WikipediaApiException e) {
+            LOG.debug("PL Wikipedia lookup failed for {}: {}", characterName, e.getMessage());
+            WikipediaResponse response = wikipediaApiClient.getCharacterSummary(WIKI_EN_BASE_URL, characterName);
+            ensureHuman(response);
+            return response;
+        }
+    }
+
+    public String getNationalityFromWikidata(String wikibaseItem) {
+        return wikidataApiClient.getFirstCitizenshipLabel(wikibaseItem, "pl", "en")
+                .orElse("Unknown");
+    }
+
+    private void ensureHuman(WikipediaResponse response) {
+        String wikibaseItem = response != null ? response.wikibaseItem() : null;
+        if (wikibaseItem == null || wikibaseItem.isBlank()) {
+            throw new CharacterNotFoundInWikipediaException("Unknown");
+        }
+        if (!wikidataApiClient.isHuman(wikibaseItem)) {
+            throw new CharacterNotFoundInWikipediaException("Not a person");
+        }
     }
 
     /**

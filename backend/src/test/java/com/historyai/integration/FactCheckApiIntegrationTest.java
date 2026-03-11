@@ -35,7 +35,8 @@ class FactCheckApiIntegrationTest {
         
         FactCheckRequest request = new FactCheckRequest(
                 "Mikołaj Kopernik urodził się w 1473 roku w Toruniu.",
-                "Mikołaj Kopernik"
+                "Mikołaj Kopernik",
+                "Polish astronomer"
         );
         
         HttpEntity<FactCheckRequest> httpRequest = new HttpEntity<>(request);
@@ -52,7 +53,7 @@ class FactCheckApiIntegrationTest {
     void factCheck_WithEmptyMessage_ShouldReturn400() {
         String url = "http://localhost:" + port + "/api/factcheck";
         
-        FactCheckRequest request = new FactCheckRequest("", "Test");
+        FactCheckRequest request = new FactCheckRequest("", "Test", null);
         
         HttpEntity<FactCheckRequest> httpRequest = new HttpEntity<>(request);
         
@@ -68,6 +69,7 @@ class FactCheckApiIntegrationTest {
         
         FactCheckRequest request = new FactCheckRequest(
                 "Jan III Sobieski był królem Polski.",
+                "Jan III Sobieski",
                 null
         );
         

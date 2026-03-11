@@ -77,4 +77,10 @@ public class CharacterController {
         characterService.deleteById(id);
         return ResponseEntity.noContent().build();
     }
+
+    @PostMapping("/import")
+    public ResponseEntity<HistoricalCharacterDTO> importFromWikipedia(@RequestParam @NotBlank String name) {
+        HistoricalCharacterDTO imported = characterService.searchAndImportFromWikipedia(name);
+        return ResponseEntity.status(HttpStatus.CREATED).body(imported);
+    }
 }
