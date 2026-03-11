@@ -17,8 +17,21 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
  * Filter that adds a unique trace ID to each HTTP request for distributed tracing.
- * The trace ID is added to MDC (Mapped Diagnostic Context) for logging correlation
- * and included in response headers for client-side tracking.
+ *
+ * <p>Provides request tracking across the application by:</p>
+ * <ul>
+ *   <li>Generating or extracting a trace ID from the request</li>
+ *   <li>Adding the trace ID to MDC for log correlation</li>
+ *   <li>Including the trace ID in response headers</li>
+ *   <li>Validating incoming trace IDs for security</li>
+ * </ul>
+ *
+ * <p>The trace ID enables correlating logs across different services and
+ * helps with debugging distributed systems.</p>
+ *
+ * @author HistoryAI Team
+ * @version 1.0
+ * @see org.slf4j.MDC
  */
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)

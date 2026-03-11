@@ -13,7 +13,16 @@ import org.springframework.web.client.RestTemplate;
 
 /**
  * Client for interacting with the Wikiquote API.
- * Retrieves page extracts for quotes.
+ *
+ * <p>Fetches famous quotes from Wikiquote to enrich fact-check responses.
+ * Supports both Polish and English Wikiquote sources.</p>
+ *
+ * <p>The client parses the wikitext format returned by the API and extracts
+ * clean quote text for use in the application.</p>
+ *
+ * @author HistoryAI Team
+ * @version 1.0
+ * @see <a href="https://www.wikiquote.org/">Wikiquote</a>
  */
 @Component
 public class WikiquoteApiClient {

@@ -15,7 +15,16 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * REST controller for Wikipedia API integration.
- * Provides endpoints for retrieving historical character information.
+ *
+ * <p>Provides endpoints for retrieving historical character information from Wikipedia.</p>
+ *
+ * <p>Note: Character management should use the main character endpoints.
+ * This controller provides direct Wikipedia lookup for special use cases.</p>
+ *
+ * @author HistoryAI Team
+ * @version 1.0
+ * @see WikipediaService
+ * @see WikipediaResponse
  */
 @RestController
 @RequestMapping("/api/wikipedia")

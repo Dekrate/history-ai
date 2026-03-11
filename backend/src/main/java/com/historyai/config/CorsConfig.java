@@ -10,6 +10,24 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Configuration for Cross-Origin Resource Sharing (CORS).
+ *
+ * <p>Configures CORS to allow the frontend application to make API requests
+ * to this backend. The allowed origins, methods, and headers are configurable
+ * via application properties.</p>
+ *
+ * <p>Default configuration allows:</p>
+ * <ul>
+ *   <li>Common HTTP methods (GET, POST, PUT, DELETE, OPTIONS)</li>
+ *   <li>Common headers (Authorization, Content-Type, X-Trace-Id)</li>
+ *   <li>Credentials support</li>
+ * </ul>
+ *
+ * @author HistoryAI Team
+ * @version 1.0
+ * @see <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS">MDN CORS Guide</a>
+ */
 @Configuration
 public class CorsConfig {
 

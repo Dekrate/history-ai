@@ -5,6 +5,24 @@ import jakarta.validation.constraints.NotBlank;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+/**
+ * Data Transfer Object (DTO) representing a historical character.
+ *
+ * <p>This class is used for transferring character data between layers of the application.
+ * It provides validation support and bidirectional conversion with the {@link HistoricalCharacter} entity.</p>
+ *
+ * <p>Usage:</p>
+ * <ul>
+ *   <li>API requests/responses for character endpoints</li>
+ *   <li>Form submissions for creating/updating characters</li>
+ *   <li>Converting between entity and DTO representations</li>
+ * </ul>
+ *
+ * @author HistoryAI Team
+ * @version 1.0
+ * @see HistoricalCharacter
+ * @see com.historyai.controller.CharacterController
+ */
 public class HistoricalCharacterDTO {
 
     private UUID id;

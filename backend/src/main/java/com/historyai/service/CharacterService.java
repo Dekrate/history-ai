@@ -16,6 +16,29 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Service layer for managing historical characters.
+ *
+ * <p>Provides business logic for CRUD operations on historical characters,
+ * including search, filtering, and importing characters from Wikipedia.
+ * All read operations are transactional, while write operations use
+ * explicit transaction boundaries.</p>
+ *
+ * <p>Key responsibilities:</p>
+ * <ul>
+ *   <li>Retrieve characters by various criteria (ID, name, era, nationality)</li>
+ *   <li>Search characters by name</li>
+ *   <li>Create, update, and delete characters</li>
+ *   <li>Import characters from Wikipedia</li>
+ *   <li>Validate business rules (birth/death years, unique names)</li>
+ * </ul>
+ *
+ * @author HistoryAI Team
+ * @version 1.0
+ * @see HistoricalCharacter
+ * @see HistoricalCharacterDTO
+ * @see com.historyai.controller.CharacterController
+ */
 @Service
 @Transactional(readOnly = true)
 public class CharacterService {
@@ -25,11 +48,22 @@ public class CharacterService {
     private final HistoricalCharacterRepository repository;
     private final WikipediaService wikipediaService;
 
+    /**
+     * Constructs a new CharacterService with the required dependencies.
+     *
+     * @param repository       the character repository for database operations
+     * @param wikipediaService the Wikipedia service for importing characters
+     */
     public CharacterService(final HistoricalCharacterRepository repository, WikipediaService wikipediaService) {
         this.repository = repository;
         this.wikipediaService = wikipediaService;
     }
 
+    /**
+     * Retrieves all historical characters from the database.
+     *
+     * @return a list of all characters as DTOs, or an empty list if none exist
+     */
     public List<HistoricalCharacterDTO> findAll() {
         return repository.findAll()
                 .stream()
@@ -37,16 +71,34 @@ public class CharacterService {
                 .toList();
     }
 
+    /**
+     * Finds a character by its unique identifier.
+     *
+     * @param id the UUID of the character to find
+     * @return an Optional containing the character DTO if found, or empty if not found
+     */
     public Optional<HistoricalCharacterDTO> findById(UUID id) {
         return repository.findById(id)
                 .map(HistoricalCharacterDTO::fromEntity);
     }
 
+    /**
+     * Finds a character by exact name match.
+     *
+     * @param name the name to search for
+     * @return an Optional containing the character DTO if found, or empty if not found
+     */
     public Optional<HistoricalCharacterDTO> findByName(String name) {
         return repository.findByName(name)
                 .map(HistoricalCharacterDTO::fromEntity);
     }
 
+    /**
+     * Finds all characters belonging to a specific historical era.
+     *
+     * @param era the era to filter by (e.g., "Renaissance", "XIX wiek")
+     * @return a list of matching character DTOs, or an empty list if none match
+     */
     public List<HistoricalCharacterDTO> findByEra(String era) {
         return repository.findByEra(era)
                 .stream()
@@ -54,6 +106,12 @@ public class CharacterService {
                 .toList();
     }
 
+    /**
+     * Finds all characters with a specific nationality.
+     *
+     * @param nationality the nationality to filter by (e.g., "Polska", "Francja")
+     * @return a list of matching character DTOs, or an empty list if none match
+     */
     public List<HistoricalCharacterDTO> findByNationality(String nationality) {
         return repository.findByNationality(nationality)
                 .stream()
@@ -61,6 +119,12 @@ public class CharacterService {
                 .toList();
     }
 
+    /**
+     * Searches for characters by name using case-insensitive partial matching.
+     *
+     * @param query the search term to match against character names
+     * @return a list of matching character DTOs, or an empty list if none match
+     */
     public List<HistoricalCharacterDTO> search(String query) {
         return repository.searchByName(query)
                 .stream()
@@ -68,6 +132,17 @@ public class CharacterService {
                 .toList();
     }
 
+    /**
+     * Saves a new historical character to the database.
+     *
+     * <p>Validates that birth year is before death year (if both provided)
+     * and that no character with the same name already exists.</p>
+     *
+     * @param dto the character DTO containing the data to save
+     * @return the saved character DTO with generated ID and timestamps
+     * @throws IllegalArgumentException if birth year is after death year
+     * @throws CharacterAlreadyExistsException if a character with the same name exists
+     */
     @Transactional
     public HistoricalCharacterDTO save(HistoricalCharacterDTO dto) {
         if (dto.getBirthYear() != null && dto.getDeathYear() != null 
@@ -84,6 +159,20 @@ public class CharacterService {
         return HistoricalCharacterDTO.fromEntity(saved);
     }
 
+    /**
+     * Updates an existing historical character.
+     *
+     * <p>Validates that the character exists, birth year is before death year
+     * (if both provided), and that the new name doesn't conflict with another
+     * existing character.</p>
+     *
+     * @param id  the UUID of the character to update
+     * @param dto the character DTO containing the updated data
+     * @return the updated character DTO
+     * @throws CharacterNotFoundException if the character with the given ID doesn't exist
+     * @throws IllegalArgumentException if birth year is after death year
+     * @throws CharacterAlreadyExistsException if another character with the same name exists
+     */
     @Transactional
     public HistoricalCharacterDTO update(UUID id, HistoricalCharacterDTO dto) {
         HistoricalCharacter existing = repository.findById(id)
@@ -112,6 +201,12 @@ public class CharacterService {
         return HistoricalCharacterDTO.fromEntity(updated);
     }
 
+    /**
+     * Deletes a historical character by its unique identifier.
+     *
+     * @param id the UUID of the character to delete
+     * @throws CharacterNotFoundException if the character with the given ID doesn't exist
+     */
     @Transactional
     public void deleteById(UUID id) {
         if (!repository.existsById(id)) {
@@ -120,6 +215,24 @@ public class CharacterService {
         repository.deleteById(id);
     }
 
+    /**
+     * Searches for a character on Wikipedia and imports their information.
+     *
+     * <p>Fetches character information from Wikipedia, extracts relevant data
+     * (name, biography, image, era, nationality), and creates a new character
+     * in the database. If a character with the same name already exists,
+     * returns the existing character instead of creating a duplicate.</p>
+     *
+     * <p>Nationality is determined by:</p>
+     * <ol>
+     *   <li>Querying Wikidata API for citizenship information</li>
+     *   <li>Fallback to extracting nationality from the Wikipedia extract</li>
+     * </ol>
+     *
+     * @param searchQuery the search query to find the character on Wikipedia
+     * @return the imported or existing character as a DTO
+     * @throws CharacterNotFoundInWikipediaException if the character is not found on Wikipedia
+     */
     @Transactional
     public HistoricalCharacterDTO searchAndImportFromWikipedia(String searchQuery) {
         logger.info("Searching and importing character from Wikipedia: {}", searchQuery);
@@ -158,6 +271,15 @@ public class CharacterService {
         return HistoricalCharacterDTO.fromEntity(saved);
     }
 
+    /**
+     * Extracts the historical era from a Wikipedia article extract.
+     *
+     * <p>Analyzes the text for keywords indicating the time period,
+     * including century references and birth year patterns.</p>
+     *
+     * @param extract the Wikipedia article extract text
+     * @return the era string (e.g., "XIX wiek", "Renesans") or "Unknown"
+     */
     private String extractEraFromWiki(String extract) {
         if (extract == null) return "Unknown";
         extract = extract.toLowerCase();
@@ -190,6 +312,15 @@ public class CharacterService {
         return "Unknown";
     }
 
+    /**
+     * Extracts the nationality from a Wikipedia article extract.
+     *
+     * <p>Analyzes the text for keywords indicating the person's nationality
+     * in multiple languages (English, Polish, etc.).</p>
+     *
+     * @param extract the Wikipedia article extract text
+     * @return the nationality string (e.g., "Polska", "Francja") or "Unknown"
+     */
     private String extractNationalityFromWiki(String extract) {
         if (extract == null) return "Unknown";
         extract = extract.toLowerCase();

@@ -2,7 +2,27 @@ package com.historyai.dto;
 
 /**
  * Data transfer object representing the result of a fact-check verification.
- * Contains the claim, verification status, source, explanation, and confidence score.
+ *
+ * <p>Contains the original claim, verification status, source information,
+ * human-readable explanation, and confidence score. This DTO is returned by
+ * the fact-checking endpoint to provide users with detailed information
+ * about the accuracy of their statements.</p>
+ *
+ * <p>Example response:</p>
+ * <pre>
+ * {
+ *   "claim": "Mikołaj Kopernik urodził się w 1473 roku",
+ *   "verification": "VERIFIED",
+ *   "source": "Wikipedia: Nicolaus Copernicus",
+ *   "explanation": "According to Wikipedia, Copernicus was born...",
+ *   "confidence": 0.95
+ * }
+ * </pre>
+ *
+ * @author HistoryAI Team
+ * @version 1.0
+ * @see FactCheckRequest
+ * @see com.historyai.service.FactCheckService
  */
 public class FactCheckResult {
 

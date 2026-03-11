@@ -12,7 +12,20 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 /**
- * Client for interacting with Wikidata to validate entity types.
+ * Client for interacting with Wikidata API.
+ *
+ * <p>Provides entity validation and property lookup capabilities:</p>
+ * <ul>
+ *   <li>Validates if a Wikidata entity is a human (Q5)</li>
+ *   <li>Retrieves citizenship/nationality information (P27 property)</li>
+ * </ul>
+ *
+ * <p>Used to ensure Wikipedia articles refer to actual historical persons
+ * and to extract nationality data for character profiles.</p>
+ *
+ * @author HistoryAI Team
+ * @version 1.0
+ * @see <a href="https://www.wikidata.org/">Wikidata</a>
  */
 @Component
 public class WikidataApiClient {

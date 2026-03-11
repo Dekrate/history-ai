@@ -12,7 +12,22 @@ import org.springframework.stereotype.Component;
 
 /**
  * Aspect for centralized logging across controllers and services.
- * Provides automatic logging of method executions, parameters, and exceptions.
+ *
+ * <p>Provides automatic logging of method executions, parameters, and exceptions
+ * using AOP (Aspect-Oriented Programming). This ensures consistent logging
+ * across the application without duplicating logging code.</p>
+ *
+ * <p>Key features:</p>
+ * <ul>
+ *   <li>Logs entry and exit of controller methods with execution time</li>
+ *   <li>Logs service method execution</li>
+ *   <li>Includes trace ID from MDC for request correlation</li>
+ *   <li>Logs exceptions with full stack traces</li>
+ * </ul>
+ *
+ * @author HistoryAI Team
+ * @version 1.0
+ * @see org.aspectj.lang.annotation.Aspect
  */
 @Aspect
 @Component

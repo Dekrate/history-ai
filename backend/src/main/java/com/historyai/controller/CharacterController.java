@@ -2,6 +2,7 @@ package com.historyai.controller;
 
 import com.historyai.dto.HistoricalCharacterDTO;
 import com.historyai.service.CharacterService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import java.util.List;
@@ -19,9 +20,30 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * REST controller for managing historical characters.
+ *
+ * <p>Provides endpoints for:</p>
+ * <ul>
+ *   <li>Listing all characters</li>
+ *   <li>Finding characters by ID, name, era, or nationality</li>
+ *   <li>Searching characters by name</li>
+ *   <li>Creating, updating, and deleting characters</li>
+ *   <li>Importing characters from Wikipedia</li>
+ * </ul>
+ *
+ * <p>All endpoints return appropriate HTTP status codes and follow REST conventions.</p>
+ *
+ * @author HistoryAI Team
+ * @version 1.0
+ * @see HistoricalCharacterDTO
+ * @see CharacterService
+ * @see io.swagger.v3.oas.annotations.tags.Tag
+ */
 @RestController
 @RequestMapping("/api/characters")
 @Validated
+@Tag(name = "Characters", description = "Historical character management API")
 public class CharacterController {
 
     private final CharacterService characterService;

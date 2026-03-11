@@ -5,7 +5,25 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * Response DTO for Wikipedia REST API.
- * Contains summary information about a Wikipedia article.
+ *
+ * <p>Represents the summary information returned from the Wikipedia REST API
+ * when fetching article content. This DTO is used to parse the JSON response
+ * and extract relevant information about historical figures.</p>
+ *
+ * <p>The response includes:</p>
+ * <ul>
+ *   <li>Title - the article's title</li>
+ *   <li>Extract - a summary/abstract of the article</li>
+ *   <li>Description - brief description from Wikidata</li>
+ *   <li>Wikibase item - Wikidata entity ID for additional data</li>
+ *   <li>Thumbnail - image information (if available)</li>
+ *   <li>Content URLs - links to the full article</li>
+ * </ul>
+ *
+ * @author HistoryAI Team
+ * @version 1.0
+ * @see com.historyai.client.WikipediaApiClient
+ * @see <a href="https://en.wikipedia.org/api/rest_v1/">Wikipedia REST API</a>
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record WikipediaResponse(
