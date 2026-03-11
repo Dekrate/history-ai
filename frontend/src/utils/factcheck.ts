@@ -75,7 +75,10 @@ export const parseFinalEvent = (data: string): FactCheckResult | null => {
     if (!parsed || !parsed.verification) {
       return null;
     }
-    return parsed;
+    return {
+      ...parsed,
+      confidence: normalizeConfidence(String(parsed.confidence)),
+    };
   } catch {
     return null;
   }

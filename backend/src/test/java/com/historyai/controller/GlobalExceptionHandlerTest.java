@@ -1,5 +1,6 @@
 package com.historyai.controller;
 
+import com.historyai.client.OllamaClient;
 import com.historyai.dto.ErrorResponse;
 import com.historyai.exception.CharacterAlreadyExistsException;
 import com.historyai.exception.CharacterNotFoundException;
@@ -157,5 +158,33 @@ class GlobalExceptionHandlerTest {
         ResponseEntity<ErrorResponse> response = handler.handleCharacterNotFound(ex, request);
 
         assertNotNull(response.getBody().getTimestamp());
+    }
+
+    @Test
+    void handleOllamaTimeout_ShouldReturn504() {
+        OllamaClient.OllamaTimeoutException ex =
+                new OllamaClient.OllamaTimeoutException("timeout", new RuntimeException("boom"));
+        when(request.getMethod()).thenReturn("POST");
+        when(request.getRequestURI()).thenReturn("/api/chat");
+
+        ResponseEntity<ErrorResponse> response = handler.handleOllamaTimeout(ex, request);
+
+        assertEquals(HttpStatus.GATEWAY_TIMEOUT, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals(504, response.getBody().getStatus());
+    }
+
+    @Test
+    void handleOllamaApiError_ShouldReturn503() {
+        OllamaClient.OllamaApiException ex =
+                new OllamaClient.OllamaApiException("api-error", new RuntimeException("boom"));
+        when(request.getMethod()).thenReturn("POST");
+        when(request.getRequestURI()).thenReturn("/api/chat");
+
+        ResponseEntity<ErrorResponse> response = handler.handleOllamaApiError(ex, request);
+
+        assertEquals(HttpStatus.SERVICE_UNAVAILABLE, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals(503, response.getBody().getStatus());
     }
 }

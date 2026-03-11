@@ -1,5 +1,6 @@
 package com.historyai.controller;
 
+import com.historyai.client.OllamaClient;
 import com.historyai.dto.ErrorResponse;
 import com.historyai.dto.ErrorResponse.FieldError;
 import com.historyai.exception.CharacterAlreadyExistsException;
@@ -144,6 +145,42 @@ public class GlobalExceptionHandler {
         ).withTraceId(traceId);
 
         return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(response);
+    }
+
+    @ExceptionHandler(OllamaClient.OllamaTimeoutException.class)
+    public ResponseEntity<ErrorResponse> handleOllamaTimeout(
+            OllamaClient.OllamaTimeoutException ex,
+            HttpServletRequest request) {
+
+        String traceId = getTraceId();
+        logWarn(traceId, request, ex);
+
+        ErrorResponse response = new ErrorResponse(
+                HttpStatus.GATEWAY_TIMEOUT.value(),
+                HttpStatus.GATEWAY_TIMEOUT.getReasonPhrase(),
+                "Model AI przekroczył limit czasu odpowiedzi. Spróbuj ponownie za chwilę.",
+                request.getRequestURI()
+        ).withTraceId(traceId);
+
+        return ResponseEntity.status(HttpStatus.GATEWAY_TIMEOUT).body(response);
+    }
+
+    @ExceptionHandler(OllamaClient.OllamaApiException.class)
+    public ResponseEntity<ErrorResponse> handleOllamaApiError(
+            OllamaClient.OllamaApiException ex,
+            HttpServletRequest request) {
+
+        String traceId = getTraceId();
+        logError(traceId, request, ex, HttpStatus.SERVICE_UNAVAILABLE);
+
+        ErrorResponse response = new ErrorResponse(
+                HttpStatus.SERVICE_UNAVAILABLE.value(),
+                HttpStatus.SERVICE_UNAVAILABLE.getReasonPhrase(),
+                "Usługa modelu AI jest chwilowo niedostępna. Spróbuj ponownie za chwilę.",
+                request.getRequestURI()
+        ).withTraceId(traceId);
+
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(response);
     }
 
     /**

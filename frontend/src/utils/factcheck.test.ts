@@ -68,4 +68,15 @@ describe('parseFinalEvent', () => {
     const result = parseFinalEvent('not-json');
     expect(result).toBeNull();
   });
+
+  it('normalizes and clamps confidence from final payload', () => {
+    const payload = JSON.stringify({
+      verification: 'VERIFIED',
+      confidence: 95,
+      explanation: 'Ok',
+      source: 'Wiki',
+    });
+    const result = parseFinalEvent(payload);
+    expect(result?.confidence).toBe(0.95);
+  });
 });
