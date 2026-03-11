@@ -1,6 +1,7 @@
 package com.historyai.integration;
 
 import com.historyai.dto.HistoricalCharacterDTO;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -181,5 +182,12 @@ class CharacterApiIntegrationTest {
                 baseUrl + "/" + randomId, String.class);
 
         assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+    }
+
+    @AfterAll
+    static void tearDown() {
+        if (postgresContainer != null && postgresContainer.isRunning()) {
+            postgresContainer.stop();
+        }
     }
 }
