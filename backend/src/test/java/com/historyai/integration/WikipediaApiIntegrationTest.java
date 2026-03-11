@@ -1,6 +1,7 @@
 package com.historyai.integration;
 
 import com.historyai.dto.WikipediaResponse;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -13,6 +14,7 @@ import org.springframework.test.context.TestPropertySource;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@Disabled("Requires external Wikipedia API - run with -Dskip.integration.tests=false")
 @TestPropertySource(properties = {
         "spring.cache.type=none",
         "resilience4j.ratelimiter.instances.wikipedia.enabled=false"

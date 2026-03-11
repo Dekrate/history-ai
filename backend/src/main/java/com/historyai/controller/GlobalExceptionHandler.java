@@ -6,6 +6,7 @@ import com.historyai.exception.CharacterAlreadyExistsException;
 import com.historyai.exception.CharacterNotFoundException;
 import com.historyai.exception.CharacterNotFoundInWikipediaException;
 import com.historyai.exception.WikipediaApiException;
+import com.historyai.exception.WikipediaRateLimitException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
@@ -125,6 +126,24 @@ public class GlobalExceptionHandler {
         ).withTraceId(traceId);
 
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(response);
+    }
+
+    @ExceptionHandler(WikipediaRateLimitException.class)
+    public ResponseEntity<ErrorResponse> handleWikipediaRateLimitError(
+            WikipediaRateLimitException ex,
+            HttpServletRequest request) {
+
+        String traceId = getTraceId();
+        logWarn(traceId, request, ex);
+
+        ErrorResponse response = new ErrorResponse(
+                HttpStatus.TOO_MANY_REQUESTS.value(),
+                HttpStatus.TOO_MANY_REQUESTS.getReasonPhrase(),
+                "Wikipedia API rate limit exceeded. Please try again later.",
+                request.getRequestURI()
+        ).withTraceId(traceId);
+
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(response);
     }
 
     /**
