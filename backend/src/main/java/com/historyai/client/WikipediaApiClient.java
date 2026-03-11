@@ -19,7 +19,6 @@ import org.springframework.web.client.RestTemplate;
 public class WikipediaApiClient {
 
     private static final Logger LOG = LoggerFactory.getLogger(WikipediaApiClient.class);
-    private static final String WIKIPEDIA_API_BASE = "https://en.wikipedia.org/api/rest_v1";
 
     private final RestTemplate restTemplate;
 
