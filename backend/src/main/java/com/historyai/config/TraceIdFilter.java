@@ -6,8 +6,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.UUID;
-
-import org.springframework.lang.NonNull;
+import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -25,9 +24,11 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @Order(Ordered.HIGHEST_PRECEDENCE)
 public class TraceIdFilter extends OncePerRequestFilter {
 
-    private static final Logger LOG = LoggerFactory.getLogger(TraceIdFilter.class);
+    private static final Logger logger = LoggerFactory.getLogger(TraceIdFilter.class);
     private static final String TRACE_ID_HEADER = "X-Trace-Id";
     private static final String TRACE_ID_MDC_KEY = "traceId";
+    private static final int MAX_TRACE_ID_LENGTH = 64;
+    private static final Pattern UUID_PATTERN = Pattern.compile("^[a-fA-F0-9-]{36}$");
 
     /**
      * Filters each request to add or extract trace ID.
@@ -39,9 +40,9 @@ public class TraceIdFilter extends OncePerRequestFilter {
      * @throws IOException      if I/O error occurs
      */
     @Override
-    protected void doFilterInternal(@NonNull HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request,
+            HttpServletResponse response,
+            FilterChain filterChain) throws ServletException, IOException {
 
         String traceId = extractOrGenerateTraceId(request);
         
@@ -49,7 +50,7 @@ public class TraceIdFilter extends OncePerRequestFilter {
             MDC.put(TRACE_ID_MDC_KEY, traceId);
             response.setHeader(TRACE_ID_HEADER, traceId);
             
-            LOG.debug("Processing request: {} {} with traceId: {}", 
+            logger.debug("Processing request: {} {} with traceId: {}", 
                     request.getMethod(), request.getRequestURI(), traceId);
             
             filterChain.doFilter(request, response);
@@ -67,7 +68,9 @@ public class TraceIdFilter extends OncePerRequestFilter {
     private String extractOrGenerateTraceId(HttpServletRequest request) {
         String headerTraceId = request.getHeader(TRACE_ID_HEADER);
         
-        if (headerTraceId != null && !headerTraceId.isBlank()) {
+        if (headerTraceId != null && !headerTraceId.isBlank() 
+                && headerTraceId.length() <= MAX_TRACE_ID_LENGTH
+                && UUID_PATTERN.matcher(headerTraceId).matches()) {
             return headerTraceId;
         }
         
