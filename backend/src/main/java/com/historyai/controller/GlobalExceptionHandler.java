@@ -36,7 +36,7 @@ import org.springframework.web.servlet.NoHandlerFoundException;
  * <p>Returns standardized error responses following RFC 7807 Problem Details specification.
  * Includes structured logging and trace ID propagation for debugging.</p>
  *
- * <p>Handles exceptions include:</p>
+ * <p>Handled exceptions include:</p>
  * <ul>
  *   <li>Character not found (404)</li>
  *   <li>Character already exists (409)</li>
